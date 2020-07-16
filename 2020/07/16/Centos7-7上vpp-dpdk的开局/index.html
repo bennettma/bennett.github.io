@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,dpdk,vpp," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="概述关于vpp和dpdk的原理、用途、牛鼻之处等，本文不再赘述，可以参考官网：  https:&#x2F;&#x2F;wiki.fd.io&#x2F;view&#x2F;VPP https:&#x2F;&#x2F;www.dpdk.org&#x2F;   本文只是简单罗列了如何开局，即主要根据vpp官网的文档，介绍了vpp的简单安装、编译安装、和几个基本功能的测试，写这个的目的有两个：  自己做一个记录 网关和网上文档主要以ubuntu为例，本文以centos7.7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Centos7.7上vpp+dpdk的开局">
+<meta property="og:url" content="https://github.maxuming.com/2020/07/16/Centos7-7%E4%B8%8Avpp-dpdk%E7%9A%84%E5%BC%80%E5%B1%80/index.html">
+<meta property="og:site_name" content="小马的个人涂鸦">
+<meta property="og:description" content="概述关于vpp和dpdk的原理、用途、牛鼻之处等，本文不再赘述，可以参考官网：  https:&#x2F;&#x2F;wiki.fd.io&#x2F;view&#x2F;VPP https:&#x2F;&#x2F;www.dpdk.org&#x2F;   本文只是简单罗列了如何开局，即主要根据vpp官网的文档，介绍了vpp的简单安装、编译安装、和几个基本功能的测试，写这个的目的有两个：  自己做一个记录 网关和网上文档主要以ubuntu为例，本文以centos7.7">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-07-16T08:55:00.000Z">
+<meta property="article:modified_time" content="2020-07-16T09:49:51.727Z">
+<meta property="article:author" content="小马哥">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="dpdk">
+<meta property="article:tag" content="vpp">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://github.maxuming.com/2020/07/16/Centos7-7上vpp-dpdk的开局/"/>
+
+
+
+
+
+  <title>Centos7.7上vpp+dpdk的开局 | 小马的个人涂鸦</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小马的个人涂鸦</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">点点滴滴</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://github.maxuming.com/2020/07/16/Centos7-7%E4%B8%8Avpp-dpdk%E7%9A%84%E5%BC%80%E5%B1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="小马哥">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小马的个人涂鸦">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Centos7.7上vpp+dpdk的开局</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-07-16T16:55:00+08:00">
+                2020-07-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tech/" itemprop="url" rel="index">
+                    <span itemprop="name">tech</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>关于vpp和dpdk的原理、用途、牛鼻之处等，本文不再赘述，可以参考官网：</p>
+<pre><code>
+https://wiki.fd.io/view/VPP
+https://www.dpdk.org/
+</code></pre>
+
+<p>本文只是简单罗列了如何开局，即主要根据vpp官网的文档，介绍了vpp的简单安装、编译安装、和几个基本功能的测试，写这个的目的有两个：</p>
+<ul>
+<li>自己做一个记录</li>
+<li>网关和网上文档主要以ubuntu为例，本文以centos7.7为例，有一点点差别</li>
+</ul>
+<p>本文分成两种模式（直接安装和编译安装），主要测试了路由器的最基础的三个功能：dhcp、dns、和nat。</p>
+<p>测试用了两台centos工控机，基础信息如下：</p>
+<pre><code>
+[root@localhost ~]# cat /etc/redhat-release 
+CentOS Linux release 7.8.2003 (Core)
+[root@localhost ~]#
+
+cpu:
+Intel(R) Celeron(R) CPU  J1900  @ 1.99GHz
+
+memory:4GB
+
+网卡：4张千兆网卡，因为只是千兆网卡，所以这里的测试并不能体现vpp的性能，只是做了一些功能性的测试。
+
+</code></pre>
+
+
+<h2 id="直接安装测试："><a href="#直接安装测试：" class="headerlink" title="直接安装测试："></a>直接安装测试：</h2><p>根据官网的步骤，安装vpp，在过程中发现会缺少一些依赖，也会需要用到dpdk等，所以总结起来要安装如下软件：</p>
+<pre><code>
+yum install pygpgme yum-utils
+yum install vpp
+yum -y install vpp-plugins vpp-devel vpp-api-python vpp-api-lua vpp-api-java vpp-debuginfo vpp-devel libvpp0
+yum -y install vpp-plugins
+yum -y install vpp-devel
+yum -y install vpp-api-python
+yum -y install vpp-api-lua
+yum -y install vpp-api-java 
+yum -y install vpp-debuginfo 
+yum -y install vpp-devel
+yum -y install libvpp0
+yum -y install epel-release
+yum -y install mbedtls-devel
+yum -y install dpdk
+yum -y install dpdk-devel dpdk-tools
+</code></pre>
+
+
+<h2 id="编译安装测试："><a href="#编译安装测试：" class="headerlink" title="编译安装测试："></a>编译安装测试：</h2><p>根据官网的步骤，编译过程如下：</p>
+<pre><code>
+git clone -b v20.05 https://github.com/FDio/vpp.git
+
+cd vpp
+make install-dep
+make build
+make pkg-rpm
+
+测试能否正常运行：
+make run
+
+提取rpm安装包：
+find -name *.rpm | xargs tar -czvf
+
+安装：
+find -name *.rpm | xargs rpm -ivh
+</code></pre>
+
+<p>需要注意的是，在同一台机器上先直接安装、然后编译安装的话，容易报错，即使是remove之前的安装也报错，感觉应该是remove不干净，所以只有强制安装：find -name *.rpm | xargs rpm -ivh –force</p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>测试步骤包括三部分：</p>
+<ol>
+<li>机器A的 enp2s0 作为wan口，上联一个普通的路由器，通过dhcp获取地址</li>
+<li>机器A的 enp3s0 作为lan口，机器A上启动dnsmasq提供dhcp server和dns服务</li>
+<li>机器B的 enp2s0 作为wan口，上联机器A的enp3s0，实现：dhcp获取地址、域名解析、以及通过机器A访问外网。</li>
+</ol>
+<p>备注：<br>为了方便测试，将机器A和机器B的enp4s0都配置了静态地址：169.254.100.x/24，接到一台傻瓜交换机上，PC通过傻瓜交换机配置静态地址（169.254.100.101）访问两台机器。</p>
+<h3 id="wan口作为dhcp-client"><a href="#wan口作为dhcp-client" class="headerlink" title="wan口作为dhcp client"></a>wan口作为dhcp client</h3><pre><code>
+在机器A上的主机中：
+ifconfig enp2s0 down
+ifconfig enp3s0 down
+
+然后启动vpp：
+systemctl start vpp.service
+启动vppctl，输入以下命令：
+#set dhcp client del intfc GigabitEthernet2/0/0 hostname vppgate
+set dhcp client intfc GigabitEthernet2/0/0 hostname vppgate
+set interface state GigabitEthernet2/0/0  up
+show interface address
+</code></pre>
+
+<p>其中 show interface address 可能要执行多次，或者等待几秒十几秒的时候才能拿到地址。</p>
+<h3 id="lan口提供dhcp和dns服务"><a href="#lan口提供dhcp和dns服务" class="headerlink" title="lan口提供dhcp和dns服务"></a>lan口提供dhcp和dns服务</h3><pre><code>
+首先在机器A上配置和启动dnsmasq，在默认配置的基础上要修改两点：
+1. dhcp-range=192.168.1.50,192.168.1.150,2h
+2. dhcp-option=3,192.168.1.1
+
+尤其要注意 （dhcp-option=3,192.168.1.1），结合后面的命令，要确保dhcp分配给下联设备时，指定网关为 192.168.1.1，即vpp的loop0才行。
+
+在vppctl中执行：
+loopback create-interface
+set int l2 bridge loop0 1 bvi
+set int ip address loop0 192.168.1.1/24
+set int state loop0 up
+
+set int l2 bridge GigabitEthernet3/0/0 1
+set int state GigabitEthernet3/0/0 up
+
+create tap host-if-name lstack host-ip4-addr 192.168.1.2/24
+
+set int l2 bridge tap0 1
+set int state tap0 up
+
+执行这些命令后，可以在机器A上看到多了一个lstack的interface，且地址为192.168.1.2，如果dnsmasq.conf中没有配置option3，则dhcp分配出去的网关地址就是192.168.1.2，这一点尤其要注意。
+
+
+其次将机器A的enp3s0和机器B的enp2s0连接，机器B的enp2s0配置dhcp获取地址的模式，等待几秒或者十几秒后，可以看到enp2s0可以拿到192.168.1.x/24的地址，且通过ip route可以看到默认网关是192.168.1.1，表示dhcp正常了。
+
+此时，在机器B上执行域名解析的动作（比如ping www.baidu.com），可以看到域名解析是正常，但是无法访问外网，这是因为在机器A的vpp中还没有配置nat，配置nat的命令如下：
+
+
+nat44 add interface address GigabitEthernet2/0/0
+set interface nat44 in loop0 out GigabitEthernet2/0/0
+
+最后再去机器B上测试，可以发现可以访问外网了（这里可以通过查询路由表，确保机器B只有一个出口地址enp2s0）。
+
+</code></pre>
+
+
+
+
+
+
+
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/dpdk/" rel="tag"># dpdk</a>
+          
+            <a href="/tags/vpp/" rel="tag"># vpp</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/09/28/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91tcpdump/" rel="next" title="交叉编译tcpdump">
+                <i class="fa fa-chevron-left"></i> 交叉编译tcpdump
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">小马哥</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#直接安装测试："><span class="nav-number">1.1.</span> <span class="nav-text">直接安装测试：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译安装测试："><span class="nav-number">1.2.</span> <span class="nav-text">编译安装测试：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试"><span class="nav-number">1.3.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#wan口作为dhcp-client"><span class="nav-number">1.3.1.</span> <span class="nav-text">wan口作为dhcp client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lan口提供dhcp和dns服务"><span class="nav-number">1.3.2.</span> <span class="nav-text">lan口提供dhcp和dns服务</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小马哥</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

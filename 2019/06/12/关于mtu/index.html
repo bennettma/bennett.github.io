@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,route," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="问题最近遇到一个问题，个别安装在客户现场的设备报告问题：  设备在线（我们设备内置管理程序和平台保持连接），但是无法更新配置和版本等。 用户反馈网络差，或者无法上网。 之前这些设备都是正常的，出问题之前，运营商刚刚改造过线路、或者更换过光猫。 出问题的设备，一般都是pppoe拨号。  分析问题通过ping包来看分析，小包正常、大包收不到应答，如下： root@OpenWrt:&#x2F;tmp# ping">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于通过ping检测mtu">
+<meta property="og:url" content="https://github.maxuming.com/2019/06/12/%E5%85%B3%E4%BA%8Emtu/index.html">
+<meta property="og:site_name" content="小马的个人涂鸦">
+<meta property="og:description" content="问题最近遇到一个问题，个别安装在客户现场的设备报告问题：  设备在线（我们设备内置管理程序和平台保持连接），但是无法更新配置和版本等。 用户反馈网络差，或者无法上网。 之前这些设备都是正常的，出问题之前，运营商刚刚改造过线路、或者更换过光猫。 出问题的设备，一般都是pppoe拨号。  分析问题通过ping包来看分析，小包正常、大包收不到应答，如下： root@OpenWrt:&#x2F;tmp# ping">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-06-12T09:08:24.000Z">
+<meta property="article:modified_time" content="2019-06-13T02:02:49.755Z">
+<meta property="article:author" content="小马哥">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="route">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://github.maxuming.com/2019/06/12/关于mtu/"/>
+
+
+
+
+
+  <title>关于通过ping检测mtu | 小马的个人涂鸦</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小马的个人涂鸦</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">点点滴滴</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://github.maxuming.com/2019/06/12/%E5%85%B3%E4%BA%8Emtu/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="小马哥">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小马的个人涂鸦">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">关于通过ping检测mtu</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-12T17:08:24+08:00">
+                2019-06-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h1><p>最近遇到一个问题，个别安装在客户现场的设备报告问题：</p>
+<ul>
+<li>设备在线（我们设备内置管理程序和平台保持连接），但是无法更新配置和版本等。</li>
+<li>用户反馈网络差，或者无法上网。</li>
+<li>之前这些设备都是正常的，出问题之前，运营商刚刚改造过线路、或者更换过光猫。</li>
+<li>出问题的设备，一般都是pppoe拨号。</li>
+</ul>
+<h1 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h1><p>通过ping包来看分析，小包正常、大包收不到应答，如下：</p>
+<pre><code>root@OpenWrt:/tmp# ping 114.114.114.114 -s 1464
+PING 114.114.114.114 (114.114.114.114): 1464 data bytes
+1472 bytes from 114.114.114.114: seq=0 ttl=58 time=12.224 ms
+1472 bytes from 114.114.114.114: seq=1 ttl=58 time=12.065 ms
+^C
+--- 114.114.114.114 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 12.065/12.144/12.224 ms
+root@OpenWrt:/tmp# 
+root@OpenWrt:/tmp# 
+root@OpenWrt:/tmp# ping 114.114.114.114 -s 1465
+PING 114.114.114.114 (114.114.114.114): 1465 data bytes
+^C
+--- 114.114.114.114 ping statistics ---
+3 packets transmitted, 0 packets received, 100% packet loss
+root@OpenWrt:/tmp#
+</code></pre>
+
+<p>再比如，这条线路的mtu更小：</p>
+<pre><code>root@OpenWrt:~# ping www.baidu.com -s 1345
+PING www.baidu.com (115.239.210.27): 1345 data bytes
+^C
+--- www.baidu.com ping statistics ---
+4 packets transmitted, 0 packets received, 100% packet loss
+root@OpenWrt:~# 
+root@OpenWrt:~# ping www.baidu.com -s 1344
+PING www.baidu.com (115.239.210.27): 1344 data bytes
+1352 bytes from 115.239.210.27: seq=0 ttl=55 time=15.572 ms
+1352 bytes from 115.239.210.27: seq=1 ttl=55 time=24.104 ms
+^C
+--- www.baidu.com ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 15.572/19.838/24.104 ms
+root@OpenWrt:~# 
+</code></pre>
+
+
+<p>基本可以确定是wan口mtu设置问题了。</p>
+<h1 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h1><p>设置系统的mtu。<br>注意：openwrt有效的mtu设置最大为1500，ubuntu没有这个限制。</p>
+<h2 id="openwrt"><a href="#openwrt" class="headerlink" title="openwrt"></a>openwrt</h2><pre><code>uci set network.wan.mtu='1480'
+uci commit network
+</code></pre>
+<p>最好同步设置</p>
+<pre><code>uci set network.lan.mtu='1480'
+uci commit network
+</code></pre>
+
+<p>这样确保dhcp拿到地址的客户端也拿到同样的mtu，减少不必要的分包。</p>
+<h2 id="centos"><a href="#centos" class="headerlink" title="centos"></a>centos</h2><p>网卡配置文件 /etc/sysconfig/network-scripts/ifcfg-eth0 中设置 MTU=1500</p>
+<p>命令行配置的是临时的，重启并不能保存。</p>
+<h2 id="ubuntu"><a href="#ubuntu" class="headerlink" title="ubuntu"></a>ubuntu</h2><p>也是在网卡配置文件 /etc/network/interfaces 中设置 mtu 1500</p>
+<h2 id="windows"><a href="#windows" class="headerlink" title="windows"></a>windows</h2><p>默认值需要修改注册表。</p>
+<p>dhcp拿到地址的时候，一般会拿到正确的mtu。</p>
+<h1 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h1><h2 id="如何检测线路的mtu"><a href="#如何检测线路的mtu" class="headerlink" title="如何检测线路的mtu"></a>如何检测线路的mtu</h2><p>通过ping包可以检测系统mtu，步骤：</p>
+<ul>
+<li>设置一个比较大的mtu，比如1500</li>
+<li>windows使用命令 ping -l 1472 -f 114.114.114.114，逐步减小-l 1472 的值，直到ping出去了，这个值加上 28 就是线路mtu</li>
+<li>普通linux下使用 ping -l 1472 -M do 114.114.114.114</li>
+<li>裁剪过的ping命令，没有参数可以设置 df，目标服务器要选好，看到没有响应就表示中间被分包了。</li>
+</ul>
+<p>注意：</p>
+<ul>
+<li>pppoe默认是1492，部分pppoe线路mtu会很小，比如 1392</li>
+</ul>
+<h2 id="mtu限制什么"><a href="#mtu限制什么" class="headerlink" title="mtu限制什么"></a>mtu限制什么</h2><p>mtu是链路层的名称，限制了链路层的最大长度，在以太网包中，就是从ip头开始到FCS之前的长度。所以，不拆分的ping包的最大大小应该是 mtu - 20 - 8，其中20为ip报头、8为icmp报头</p>
+<h2 id="ping不同的地址、出现不同的效果"><a href="#ping不同的地址、出现不同的效果" class="headerlink" title="ping不同的地址、出现不同的效果"></a>ping不同的地址、出现不同的效果</h2><p>实验中发现，同一台机器中，用同样大小（超过mtu限制）的包ping不同的地址，会有不同的效果，类似如下：</p>
+<pre><code>root@OpenWrt:~# ping -s 1480 114.114.114.114
+PING 114.114.114.114 (114.114.114.114): 1480 data bytes
+^C
+--- 114.114.114.114 ping statistics ---
+4 packets transmitted, 0 packets received, 100% packet loss
+root@OpenWrt:~# 
+root@OpenWrt:~# ping -s 1480 120.55.162.110
+PING 120.55.162.110 (120.55.162.110): 1480 data bytes
+1488 bytes from 120.55.162.110: seq=0 ttl=128 time=8.061 ms
+1488 bytes from 120.55.162.110: seq=1 ttl=128 time=8.102 ms
+^C
+--- 120.55.162.110 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 8.061/8.081/8.102 ms
+root@OpenWrt:~#
+</code></pre>
+
+<p>更多的测试发现，对于拆分后的icmp包，不能正确响应的包括：</p>
+<ul>
+<li>114.114.114.114  223.6.6.6  8.8.8.8 等知名dns服务器</li>
+<li><a href="http://www.baidu.com" target="_blank" rel="noopener">www.baidu.com</a>  <a href="http://www.sina.com" target="_blank" rel="noopener">www.sina.com</a>  <a href="http://www.taobao.com" target="_blank" rel="noopener">www.taobao.com</a></li>
+<li>阿里云负载均衡的ip地址</li>
+<li></li>
+</ul>
+<p>可以正常响应的包括：</p>
+<ul>
+<li><a href="http://www.163.com" target="_blank" rel="noopener">www.163.com</a>  weibo.cn   <a href="http://www.jd.com" target="_blank" rel="noopener">www.jd.com</a></li>
+<li>阿里云ECS的公网ip地址</li>
+<li>ubuntu、centos等</li>
+<li>个别测试后的简单防火墙，比如 fortinet</li>
+<li></li>
+</ul>
+<p>具体原因未知。</p>
+<h2 id="pppoe的mtu为什么减少8个字节"><a href="#pppoe的mtu为什么减少8个字节" class="headerlink" title="pppoe的mtu为什么减少8个字节"></a>pppoe的mtu为什么减少8个字节</h2><p>pppoe的开销是8个字节，pppoe也是属于以太网帧的payload。</p>
+<h2 id="裁剪的ping命令没有参数可以设置df"><a href="#裁剪的ping命令没有参数可以设置df" class="headerlink" title="裁剪的ping命令没有参数可以设置df"></a>裁剪的ping命令没有参数可以设置df</h2><p>openwrt以及一些路由器中使用的linux，使用的都是裁剪过的ping命令，一般都没有参数可以设置 ip的df(don’t fragmentation)</p>
+<h2 id="如何通过dhcp来设置mtu"><a href="#如何通过dhcp来设置mtu" class="headerlink" title="如何通过dhcp来设置mtu"></a>如何通过dhcp来设置mtu</h2><p>dhcp分配地址的时候，可以有mtu。<br>openwrt把lan口的mtu设置成合适的，dnsmasq会读取lan口的mtu发给dhcp client。</p>
+<h2 id="mtu的作用"><a href="#mtu的作用" class="headerlink" title="mtu的作用"></a>mtu的作用</h2><p>mtu仅仅对系统发出去的包有效，不能限制进入系统的数据包。</p>
+<h2 id="pppoe可以自动设置mtu么？"><a href="#pppoe可以自动设置mtu么？" class="headerlink" title="pppoe可以自动设置mtu么？"></a>pppoe可以自动设置mtu么？</h2><p>不能，相关的rfc文档都没有提到ncp协商、ipcp分配地址的时候可以设定该字段。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/route/" rel="tag"># route</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/06/11/windows/%E7%94%A8VS%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E6%A1%8C%E9%9D%A2%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F/" rel="next" title="用VS创建一个桌面应用程序(未完成)">
+                <i class="fa fa-chevron-left"></i> 用VS创建一个桌面应用程序(未完成)
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/09/28/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91tcpdump/" rel="prev" title="交叉编译tcpdump">
+                交叉编译tcpdump <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">小马哥</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#问题"><span class="nav-number">1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#分析问题"><span class="nav-number">2.</span> <span class="nav-text">分析问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#解决办法"><span class="nav-number">3.</span> <span class="nav-text">解决办法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#openwrt"><span class="nav-number">3.1.</span> <span class="nav-text">openwrt</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#centos"><span class="nav-number">3.2.</span> <span class="nav-text">centos</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ubuntu"><span class="nav-number">3.3.</span> <span class="nav-text">ubuntu</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#windows"><span class="nav-number">3.4.</span> <span class="nav-text">windows</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#扩展"><span class="nav-number">4.</span> <span class="nav-text">扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#如何检测线路的mtu"><span class="nav-number">4.1.</span> <span class="nav-text">如何检测线路的mtu</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mtu限制什么"><span class="nav-number">4.2.</span> <span class="nav-text">mtu限制什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ping不同的地址、出现不同的效果"><span class="nav-number">4.3.</span> <span class="nav-text">ping不同的地址、出现不同的效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pppoe的mtu为什么减少8个字节"><span class="nav-number">4.4.</span> <span class="nav-text">pppoe的mtu为什么减少8个字节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#裁剪的ping命令没有参数可以设置df"><span class="nav-number">4.5.</span> <span class="nav-text">裁剪的ping命令没有参数可以设置df</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何通过dhcp来设置mtu"><span class="nav-number">4.6.</span> <span class="nav-text">如何通过dhcp来设置mtu</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mtu的作用"><span class="nav-number">4.7.</span> <span class="nav-text">mtu的作用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pppoe可以自动设置mtu么？"><span class="nav-number">4.8.</span> <span class="nav-text">pppoe可以自动设置mtu么？</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小马哥</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

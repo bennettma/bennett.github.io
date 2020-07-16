@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,cross compile," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言之前的文章描述了如何根据官网指引编译nginx以及如何交叉编译nginx，其中交叉编译部分以最简单的模式进行（去掉了很多模块）。本文继续描述更多交叉编译模块，包括：使用不同的交叉编译器，引入更多模块（尤其是ssl比较复杂）。 交叉编译器笔者系统中存在若干个版本的交叉编译器，有些是笔者从项目中编译出来的、有些是供应商给的，这里挑选几款比较有典型意义的交叉编译器来完成交叉编译。 arm交叉编译链的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nginx的交叉编译（二）（未完成）">
+<meta property="og:url" content="https://github.maxuming.com/2019/06/06/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/nginx%E7%9A%84%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%EF%BC%88%E4%BA%8C%EF%BC%89/index.html">
+<meta property="og:site_name" content="小马的个人涂鸦">
+<meta property="og:description" content="前言之前的文章描述了如何根据官网指引编译nginx以及如何交叉编译nginx，其中交叉编译部分以最简单的模式进行（去掉了很多模块）。本文继续描述更多交叉编译模块，包括：使用不同的交叉编译器，引入更多模块（尤其是ssl比较复杂）。 交叉编译器笔者系统中存在若干个版本的交叉编译器，有些是笔者从项目中编译出来的、有些是供应商给的，这里挑选几款比较有典型意义的交叉编译器来完成交叉编译。 arm交叉编译链的">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-06-06T08:08:12.000Z">
+<meta property="article:modified_time" content="2019-06-10T00:30:44.116Z">
+<meta property="article:author" content="小马哥">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="cross compile">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://github.maxuming.com/2019/06/06/交叉编译/nginx的交叉编译（二）/"/>
+
+
+
+
+
+  <title>nginx的交叉编译（二）（未完成） | 小马的个人涂鸦</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小马的个人涂鸦</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">点点滴滴</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://github.maxuming.com/2019/06/06/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/nginx%E7%9A%84%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%EF%BC%88%E4%BA%8C%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="小马哥">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小马的个人涂鸦">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">nginx的交叉编译（二）（未完成）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-06T16:08:12+08:00">
+                2019-06-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tech/" itemprop="url" rel="index">
+                    <span itemprop="name">tech</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>之前的文章描述了如何根据官网指引编译nginx以及如何交叉编译nginx，其中交叉编译部分以最简单的模式进行（去掉了很多模块）。本文继续描述更多交叉编译模块，包括：使用不同的交叉编译器，引入更多模块（尤其是ssl比较复杂）。</p>
+<h1 id="交叉编译器"><a href="#交叉编译器" class="headerlink" title="交叉编译器"></a>交叉编译器</h1><p>笔者系统中存在若干个版本的交叉编译器，有些是笔者从项目中编译出来的、有些是供应商给的，这里挑选几款比较有典型意义的交叉编译器来完成交叉编译。</p>
+<h2 id="arm"><a href="#arm" class="headerlink" title="arm"></a>arm</h2><p>交叉编译链的根目录如下：</p>
+<pre><code>root@ubuntu:one-arm-cross# ls -l
+total 28
+drwxrwxrwx 6 root root 4096 Mar  3  2018 arm-buildroot-linux-gnueabi
+drwxrwxrwx 2 root root 4096 Mar  3  2018 bin
+drwxrwxrwx 2 root root 4096 Mar  3  2018 include
+drwxrwxrwx 5 root root 4096 Mar  3  2018 lib
+drwxrwxrwx 4 root root 4096 Mar  3  2018 libexec
+drwxrwxrwx 9 root root 4096 Mar  3  2018 share
+-rwxrwxrwx 1 root root   72 Mar  3  2018 version
+root@ubuntu:one-arm-cross#
+</code></pre>
+
+<p>在之前文章中描素过，我们需要找到gcc、g++、include和lib等目录，初看一眼，我们总会认为gcc、g++位于bin目录下，include和lib也在，其实再进入相关目录查看并非如此。比如gcc和g++的确在bin目录下：</p>
+<pre><code>root@ubuntu:one-arm-cross# ls -l bin/
+total 31708
+-rwxrwxrwx 1 root root  654392 Mar  3  2018 arm-buildroot-linux-gnueabi-addr2line
+-rwxrwxrwx 1 root root  684146 Mar  3  2018 arm-buildroot-linux-gnueabi-ar
+...... 省略了很多输出
+-rwxrwxrwx 1 root root  637541 Mar  3  2018 arm-linux-g++
+-rwxrwxrwx 1 root root  635091 Mar  3  2018 arm-linux-gcc
+-rwxrwxrwx 1 root root  635091 Mar  3  2018 arm-linux-gcc-4.8.5
+-rwxrwxrwx 1 root root   26927 Mar  3  2018 arm-linux-gcc-ar
+-rwxrwxrwx 1 root root   26863 Mar  3  2018 arm-linux-gcc-nm
+-rwxrwxrwx 1 root root   26899 Mar  3  2018 arm-linux-gcc-ranlib
+-rwxrwxrwx 1 root root  295397 Mar  3  2018 arm-linux-gcov
+-rwxrwxrwx 1 root root  721699 Mar  3  2018 arm-linux-gprof
+-rwxrwxrwx 1 root root 1130114 Mar  3  2018 arm-linux-ld
+-rwxrwxrwx 1 root root 1130114 Mar  3  2018 arm-linux-ld.bfd
+-rwxrwxrwx 1 root root  665465 Mar  3  2018 arm-linux-nm
+-rwxrwxrwx 1 root root  827112 Mar  3  2018 arm-linux-objcopy
+-rwxrwxrwx 1 root root 1034055 Mar  3  2018 arm-linux-objdump
+-rwxrwxrwx 1 root root  684145 Mar  3  2018 arm-linux-ranlib
+-rwxrwxrwx 1 root root  440662 Mar  3  2018 arm-linux-readelf
+-rwxrwxrwx 1 root root  655978 Mar  3  2018 arm-linux-size
+-rwxrwxrwx 1 root root  654252 Mar  3  2018 arm-linux-strings
+-rwxrwxrwx 1 root root  827111 Mar  3  2018 arm-linux-strip
+-rwxrwxrwx 1 root root    5465 Mar  3  2018 GetSharelib.sh
+-rwxrwxrwx 1 root root    9251 Mar  3  2018 so_show.sh
+root@ubuntu:one-arm-cross# 
+</code></pre>
+
+<p>但是include和lib目录下并没有我们需要的头文件和库文件，如下：</p>
+<pre><code>root@ubuntu:one-arm-cross# ls -l include/
+total 192
+-rwxrwxrwx 1 root root 30929 Mar  3  2018 gawkapi.h
+-rwxrwxrwx 1 root root 83139 Mar  3  2018 gmp.h
+-rwxrwxrwx 1 root root 12733 Mar  3  2018 mpc.h
+-rwxrwxrwx 1 root root  6236 Mar  3  2018 mpf2mpfr.h
+-rwxrwxrwx 1 root root 51307 Mar  3  2018 mpfr.h
+root@ubuntu:one-arm-cross# 
+root@ubuntu:one-arm-cross# ls -l lib
+total 2892
+drwxrwxrwx 2 root root   4096 Mar  3  2018 gawk
+drwxrwxrwx 3 root root   4096 Mar  3  2018 gcc
+drwxrwxrwx 2 root root   4096 Mar  3  2018 ldscripts
+-rwxrwxrwx 1 root root   1095 Mar  3  2018 libgmp.la
+-rwxrwxrwx 1 root root 478466 Mar  3  2018 libgmp.so
+-rwxrwxrwx 1 root root 478466 Mar  3  2018 libgmp.so.10
+-rwxrwxrwx 1 root root 478466 Mar  3  2018 libgmp.so.10.2.0
+-rwxrwxrwx 1 root root   1251 Mar  3  2018 libmpc.la
+-rwxrwxrwx 1 root root 100581 Mar  3  2018 libmpc.so
+-rwxrwxrwx 1 root root 100581 Mar  3  2018 libmpc.so.3
+-rwxrwxrwx 1 root root 100581 Mar  3  2018 libmpc.so.3.0.0
+-rwxrwxrwx 1 root root   1174 Mar  3  2018 libmpfr.la
+-rwxrwxrwx 1 root root 395684 Mar  3  2018 libmpfr.so
+-rwxrwxrwx 1 root root 395684 Mar  3  2018 libmpfr.so.4
+-rwxrwxrwx 1 root root 395684 Mar  3  2018 libmpfr.so.4.1.3
+root@ubuntu:one-arm-cross# 
+</code></pre>
+
+<p>如何定位正确的include和lib目录呢，我们通过搜索最常见的头文件和库文件可以找到：</p>
+<pre><code>root@ubuntu:one-arm-cross# find -name stdio.h
+./arm-buildroot-linux-gnueabi/include/c++/4.8.5/tr1/stdio.h
+./arm-buildroot-linux-gnueabi/sysroot/usr/include/bits/stdio.h
+./arm-buildroot-linux-gnueabi/sysroot/usr/include/stdio.h
+root@ubuntu:one-arm-cross# 
+root@ubuntu:one-arm-cross# find -name string.h
+./arm-buildroot-linux-gnueabi/sysroot/usr/include/bits/string.h
+./arm-buildroot-linux-gnueabi/sysroot/usr/include/string.h
+./arm-buildroot-linux-gnueabi/sysroot/usr/include/linux/string.h
+root@ubuntu:one-arm-cross#
+root@ubuntu:one-arm-cross# find -name libc.so
+./arm-buildroot-linux-gnueabi/sysroot/usr/lib/libc.so
+./arm-buildroot-linux-gnueabi/sysroot/usr/lib32/libc.so
+root@ubuntu:one-arm-cross# 
+root@ubuntu:one-arm-cross# find -name libpthread.so
+./arm-buildroot-linux-gnueabi/sysroot/usr/lib/libpthread.so
+./arm-buildroot-linux-gnueabi/sysroot/usr/lib32/libpthread.so
+root@ubuntu:one-arm-cross# 
+</code></pre>
+
+<p>可以看到include目录应该就是 ./arm-buildroot-linux-gnueabi/sysroot/usr/include，但是lib目录是 ./arm-buildroot-linux-gnueabi/sysroot/usr/lib 还是 ./arm-buildroot-linux-gnueabi/sysroot/usr/lib32 呢？<br>其实再次进行对比，可以发现 ./arm-buildroot-linux-gnueabi/sysroot/usr/lib 和 ./arm-buildroot-linux-gnueabi/sysroot/usr/lib32 目录下的文件是一致的。</p>
+<pre><code>root@ubuntu:one-arm-cross# diff ./arm-buildroot-linux-gnueabi/sysroot/usr/lib ./arm-buildroot-linux-gnueabi/sysroot/usr/lib32 -r
+root@ubuntu:one-arm-cross#
+</code></pre>
+
+<p>所以我们重点关注交叉编译链相关的几个配置参数就已经确定了：</p>
+<pre><code>--with-cc=/home/sdks/one-arm-cross/bin/arm-linux-gcc 
+--with-cpp=/home/sdks/one-arm-cross/bin/arm-linux-g++ 
+--with-cc-opt="-I/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/include" 
+--with-ld-opt="-L/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/lib"
+</code></pre>
+
+<p>最后，配置命令如下：</p>
+<pre><code>./configure --prefix=/tmp/_install --with-cc=/home/sdks/one-arm-cross/bin/arm-linux-gcc --with-cpp=/home/sdks/one-arm-cross/bin/arm-linux-g++ --with-cc-opt="-I/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/include" --with-ld-opt="-L/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/lib" --without-http_rewrite_module --without-http_gzip_module --without-http_upstream_zone_module --without-http_charset_module --without-http_ssi_module --without-http_userid_module --without-http_access_module --without-http_auth_basic_module --without-http_autoindex_module --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module --without-http_proxy_module --without-http_uwsgi_module --without-http_scgi_module --without-http_memcached_module --without-http_limit_conn_module --without-http_limit_req_module --without-http_empty_gif_module --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module --without-http_upstream_keepalive_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module  --without-stream_limit_conn_module --without-stream_access_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_zone_module
+</code></pre>
+
+<p>其中配置的时候会遇到几个错误和解决方法分别如下，具体解释可以参考前一篇文章。</p>
+<h3 id="编译器找不到错误"><a href="#编译器找不到错误" class="headerlink" title="编译器找不到错误"></a>编译器找不到错误</h3><p>报错现象：</p>
+<pre><code>./configure: error: C compiler /home/sdks/one-arm-cross/bin/arm-linux-gcc is not found
+</code></pre>
+
+<p>解决办法：<br>修改 auto/feature 大概 42行，把 $CC 修改成 gcc.</p>
+<h3 id="无法检测int的大小"><a href="#无法检测int的大小" class="headerlink" title="无法检测int的大小"></a>无法检测int的大小</h3><p>报错现象：</p>
+<pre><code>checking for int size ...objs/autotest: 1: objs/autotest: Syntax error: word unexpected (expecting ")")
+  bytes
+
+./configure: error: can not detect int size
+</code></pre>
+
+<p>解决办法：<br>修改 auto/cc/sizeof 大概 36 行，把 $CC 修改成 gcc.<br>另外根据目标机的实际情况，要修改变量 ngx_size 的值，比如我的系统中目标机器是32位的，则大概 46 行左右，设置：ngx_size=4</p>
+<h3 id="大小端的设定"><a href="#大小端的设定" class="headerlink" title="大小端的设定"></a>大小端的设定</h3><p>这个地方configure本身并不会报错，但是这个地方是要根据实际情况手动调整的，原因分析和调整方法参考<a href="#about_endian">附录</a>，</p>
+<h2 id="mips"><a href="#mips" class="headerlink" title="mips"></a>mips</h2><p>交叉编译链的根目录如下：</p>
+<pre><code>root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686# ls -l
+total 124
+drwxr-xr-x 3 root root  4096 Jun  7 12:27 build_dir
+-rw-r--r-- 1 root root 40823 Jun  7 12:27 Config-build.in
+-rw-r--r-- 1 root root    57 Jul 18  2017 Config.in
+drwxr-xr-x 2 root root  4096 Jun  7 12:26 dl
+drwxr-xr-x 2 root root  4096 Jul 18  2017 docs
+-rw-r--r-- 1 root root   900 Jun  7 12:27 feeds.conf.default
+drwxr-xr-x 3 root root  4096 Jun  7 12:27 include
+-rw-r--r-- 1 root root 17992 Jul 18  2017 LICENSE
+-rw-r--r-- 1 root root  1208 Jul 18  2017 Makefile
+drwxr-xr-x 2 root root  4096 Jun  7 12:27 package
+-rw-r--r-- 1 root root   374 Jul 18  2017 prepare.mk
+-rw-r--r-- 1 root root   337 Jul 18  2017 README.SDK
+-rw-r--r-- 1 root root 10649 Jul 18  2017 rules.mk
+drwxr-xr-x 4 root root  4096 Jul 18  2017 scripts
+drwxr-xr-x 5 root root  4096 Jun  7 12:27 staging_dir
+drwxr-xr-x 3 root root  4096 Jun  7 12:27 target
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686# 
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686# ls -l staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/
+total 26928
+-rwxr-xr-x 1 root root   31899 Jun  7 11:46 ldd
+lrwxrwxrwx 1 root root      35 Jun  7 11:46 mips-openwrt-linux-addr2line -> mips-openwrt-linux-uclibc-addr2line
+lrwxrwxrwx 1 root root      28 Jun  7 11:46 mips-openwrt-linux-ar -> mips-openwrt-linux-uclibc-ar
+lrwxrwxrwx 1 root root      28 Jun  7 11:46 mips-openwrt-linux-as -> mips-openwrt-linux-uclibc-as
+lrwxrwxrwx 1 root root      29 Jun  7 11:46 mips-openwrt-linux-c++ -> mips-openwrt-linux-uclibc-c++
+lrwxrwxrwx 1 root root      33 Jun  7 11:46 mips-openwrt-linux-c++filt -> mips-openwrt-linux-uclibc-c++filt
+lrwxrwxrwx 1 root root      29 Jun  7 11:46 mips-openwrt-linux-cpp -> mips-openwrt-linux-uclibc-cpp
+lrwxrwxrwx 1 root root      33 Jun  7 11:46 mips-openwrt-linux-elfedit -> mips-openwrt-linux-uclibc-elfedit
+lrwxrwxrwx 1 root root      29 Jun  7 11:46 mips-openwrt-linux-g++ -> mips-openwrt-linux-uclibc-g++
+lrwxrwxrwx 1 root root      29 Jun  7 11:46 mips-openwrt-linux-gcc -> mips-openwrt-linux-uclibc-gcc
+lrwxrwxrwx 1 root root      35 Jun  7 11:46 mips-openwrt-linux-gcc-4.8.3 -> mips-openwrt-linux-uclibc-gcc-4.8.3
+lrwxrwxrwx 1 root root      32 Jun  7 11:46 mips-openwrt-linux-gcc-ar -> mips-openwrt-linux-uclibc-gcc-ar
+lrwxrwxrwx 1 root root      32 Jun  7 11:46 mips-openwrt-linux-gcc-nm -> mips-openwrt-linux-uclibc-gcc-nm
+lrwxrwxrwx 1 root root      36 Jun  7 11:46 mips-openwrt-linux-gcc-ranlib -> mips-openwrt-linux-uclibc-gcc-ranlib
+lrwxrwxrwx 1 root root      30 Jun  7 11:46 mips-openwrt-linux-gcov -> mips-openwrt-linux-uclibc-gcov
+lrwxrwxrwx 1 root root      29 Jun  7 11:46 mips-openwrt-linux-gdb -> mips-openwrt-linux-uclibc-gdb
+lrwxrwxrwx 1 root root      31 Jun  7 11:46 mips-openwrt-linux-gprof -> mips-openwrt-linux-uclibc-gprof
+lrwxrwxrwx 1 root root      28 Jun  7 11:46 mips-openwrt-linux-ld -> mips-openwrt-linux-uclibc-ld
+lrwxrwxrwx 1 root root      32 Jun  7 11:46 mips-openwrt-linux-ld.bfd -> mips-openwrt-linux-uclibc-ld.bfd
+lrwxrwxrwx 1 root root      28 Jun  7 11:46 mips-openwrt-linux-nm -> mips-openwrt-linux-uclibc-nm
+lrwxrwxrwx 1 root root      33 Jun  7 11:46 mips-openwrt-linux-objcopy -> mips-openwrt-linux-uclibc-objcopy
+lrwxrwxrwx 1 root root      33 Jun  7 11:46 mips-openwrt-linux-objdump -> mips-openwrt-linux-uclibc-objdump
+lrwxrwxrwx 1 root root      32 Jun  7 11:46 mips-openwrt-linux-ranlib -> mips-openwrt-linux-uclibc-ranlib
+lrwxrwxrwx 1 root root      33 Jun  7 11:46 mips-openwrt-linux-readelf -> mips-openwrt-linux-uclibc-readelf
+lrwxrwxrwx 1 root root      30 Jun  7 11:46 mips-openwrt-linux-size -> mips-openwrt-linux-uclibc-size
+lrwxrwxrwx 1 root root      33 Jun  7 11:46 mips-openwrt-linux-strings -> mips-openwrt-linux-uclibc-strings
+lrwxrwxrwx 1 root root      31 Jun  7 11:46 mips-openwrt-linux-strip -> mips-openwrt-linux-uclibc-strip
+-rwxr-xr-x 1 root root 1070344 Jun  7 12:27 mips-openwrt-linux-uclibc-addr2line
+-rwxr-xr-x 2 root root 1103084 Jun  7 12:27 mips-openwrt-linux-uclibc-ar
+-rwxr-xr-x 2 root root 1703852 Jun  7 12:27 mips-openwrt-linux-uclibc-as
+-rwxr-xr-x 2 root root  613692 Jun  7 12:27 mips-openwrt-linux-uclibc-c++
+-rwxr-xr-x 1 root root 1070120 Jun  7 12:27 mips-openwrt-linux-uclibc-c++filt
+-rwxr-xr-x 1 root root  613692 Jun  7 12:27 mips-openwrt-linux-uclibc-cpp
+-rwxr-xr-x 1 root root   30488 Jun  7 12:27 mips-openwrt-linux-uclibc-elfedit
+-rwxr-xr-x 2 root root  613692 Jun  7 12:27 mips-openwrt-linux-uclibc-g++
+-rwxr-xr-x 2 root root  613692 Jun  7 12:27 mips-openwrt-linux-uclibc-gcc
+-rwxr-xr-x 2 root root  613692 Jun  7 12:27 mips-openwrt-linux-uclibc-gcc-4.8.3
+-rwxr-xr-x 1 root root   26204 Jun  7 12:27 mips-openwrt-linux-uclibc-gcc-ar
+-rwxr-xr-x 1 root root   22108 Jun  7 12:27 mips-openwrt-linux-uclibc-gcc-nm
+-rwxr-xr-x 1 root root   22108 Jun  7 12:27 mips-openwrt-linux-uclibc-gcc-ranlib
+-rwxr-xr-x 1 root root  288608 Jun  7 12:27 mips-openwrt-linux-uclibc-gcov
+-rwxr-xr-x 1 root root 4616868 Jun  7 12:27 mips-openwrt-linux-uclibc-gdb
+-rwxr-xr-x 1 root root 1148904 Jun  7 12:27 mips-openwrt-linux-uclibc-gprof
+-rwxr-xr-x 4 root root 2182316 Jun  7 12:27 mips-openwrt-linux-uclibc-ld
+-rwxr-xr-x 4 root root 2182316 Jun  7 12:27 mips-openwrt-linux-uclibc-ld.bfd
+-rwxr-xr-x 2 root root 1082984 Jun  7 12:27 mips-openwrt-linux-uclibc-nm
+-rwxr-xr-x 2 root root 1289288 Jun  7 12:27 mips-openwrt-linux-uclibc-objcopy
+-rwxr-xr-x 2 root root 1593160 Jun  7 12:27 mips-openwrt-linux-uclibc-objdump
+-rwxr-xr-x 2 root root 1103084 Jun  7 12:27 mips-openwrt-linux-uclibc-ranlib
+-rwxr-xr-x 1 root root  460108 Jun  7 12:27 mips-openwrt-linux-uclibc-readelf
+-rwxr-xr-x 1 root root 1070312 Jun  7 12:27 mips-openwrt-linux-uclibc-size
+-rwxr-xr-x 1 root root 1070280 Jun  7 12:27 mips-openwrt-linux-uclibc-strings
+-rwxr-xr-x 2 root root 1289288 Jun  7 12:27 mips-openwrt-linux-uclibc-strip
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686# 
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686# find -name stdio.h
+./staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/include/bits/stdio.h
+./staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/include/stdio.h
+./staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/mips-openwrt-linux-uclibc/include/c++/4.8.3/tr1/stdio.h
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686#
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686# find -name libpthread.so
+./staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/lib/libpthread.so
+root@ubuntu:OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686#
+</code></pre>
+
+<p>同样的，我们重点关注交叉编译链相关的几个配置参数：</p>
+<pre><code>--with-cc=/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc
+--with-cpp=/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-g++
+--with-cc-opt="-I/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/include" 
+--with-ld-opt="-L/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/lib"
+</code></pre>
+
+<p>最后，配置命令如下：</p>
+<pre><code>./configure --prefix=/tmp/_install --with-cc=/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc --with-cpp=/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-g++ --with-cc-opt="-I/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/include" --with-ld-opt="-L/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/lib" --without-http_rewrite_module --without-http_gzip_module --without-http_upstream_zone_module --without-http_charset_module --without-http_ssi_module --without-http_userid_module --without-http_access_module --without-http_auth_basic_module --without-http_autoindex_module --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module --without-http_proxy_module --without-http_uwsgi_module --without-http_scgi_module --without-http_memcached_module --without-http_limit_conn_module --without-http_limit_req_module --without-http_empty_gif_module --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module --without-http_upstream_keepalive_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module  --without-stream_limit_conn_module --without-stream_access_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_zone_module
+</code></pre>
+
+<pre><code>./configure --prefix=/tmp/_install --with-cc=/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc --with-cpp=/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-g++ --with-cc-opt="-I/home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/include" --without-http_rewrite_module --without-http_gzip_module --without-http_upstream_zone_module --without-http_charset_module --without-http_ssi_module --without-http_userid_module --without-http_access_module --without-http_auth_basic_module --without-http_autoindex_module --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module --without-http_proxy_module --without-http_uwsgi_module --without-http_scgi_module --without-http_memcached_module --without-http_limit_conn_module --without-http_limit_req_module --without-http_empty_gif_module --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module --without-http_upstream_keepalive_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module  --without-stream_limit_conn_module --without-stream_access_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_zone_module
+</code></pre>
+
+
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>针对不同的交叉编译链，我们要做的事情都很类似：</p>
+<ul>
+<li>观察交叉编译链</li>
+<li>找到gcc、g++和ld，分配设置给 –with-cc, –with-cpp, –with-ld</li>
+<li>找到include目录和lib目录，分别设置给 –with-cc-opt和 –with-ld-opt</li>
+<li>注意观察cpu的位数（即int的长度）、以及大小端（big endian、little endian）的设置</li>
+</ul>
+<h1 id="增加模块"><a href="#增加模块" class="headerlink" title="增加模块"></a>增加模块</h1><p>nginx的很多模块都依赖于第三方库，对于centos、ubuntu这类成熟系统来说，第三方库的安装都比较简单，直接用命令行即可。但对于交叉编译链来说，第三方库往往都是不完整的、或者版本不匹配的。这里笔者针对常用的几个模块做一些交叉编译的说明。</p>
+<h2 id="zip"><a href="#zip" class="headerlink" title="zip"></a>zip</h2><h2 id="rewrite"><a href="#rewrite" class="headerlink" title="rewrite"></a>rewrite</h2><h2 id="ssl"><a href="#ssl" class="headerlink" title="ssl"></a>ssl</h2><h1 id="宿主机不同"><a href="#宿主机不同" class="headerlink" title="宿主机不同"></a>宿主机不同</h1><p>笔者之前文章中，没有提及一件事情，即：宿主机和目标机都是32位的系统，如果宿主机是64位的系统，是否会有问题呢？这里记录笔者遇到过的一些现象。</p>
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="关于大小端"><a href="#关于大小端" class="headerlink" title="关于大小端"></a>关于大小端</h2><p><span id='about_endian'></span><br>如果我们不修改 auto/endian 文件，configure过程并不会报错，原因是我这个文件有bug，无法正确识别大小端。</p>
+<p>先打开该文件观察一下：</p>
+<pre><code># Copyright (C) Igor Sysoev
+# Copyright (C) Nginx, Inc.
+
+
+echo $ngx_n "checking for system byte ordering ...$ngx_c"
+
+cat << END >> $NGX_AUTOCONF_ERR
+
+----------------------------------------
+checking for system byte ordering
+
+END
+
+
+cat << END > $NGX_AUTOTEST.c
+
+int main(void) {
+    int i = 0x11223344;
+    char *p;
+
+    p = (char *) &i;
+    if (*p == 0x44) return 0;
+    return 1;
+}
+
+END
+
+ngx_test="$CC $CC_TEST_FLAGS $CC_AUX_FLAGS \
+          -o $NGX_AUTOTEST $NGX_AUTOTEST.c $NGX_LD_OPT $ngx_feature_libs"
+
+eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"
+
+if [ -x $NGX_AUTOTEST ]; then
+    if $NGX_AUTOTEST >/dev/null 2>&1; then
+        echo " little endian"
+        have=NGX_HAVE_LITTLE_ENDIAN . auto/have
+    else
+        echo " big endian"
+    fi
+
+    rm -rf $NGX_AUTOTEST*
+
+else
+    rm -rf $NGX_AUTOTEST*
+
+    echo
+    echo "$0: error: cannot detect system byte ordering"
+    exit 1
+fi
+</code></pre>
+
+<p>重点关注如下几行：</p>
+<pre><code>if [ -x $NGX_AUTOTEST ]; then
+    if $NGX_AUTOTEST >/dev/null 2>&1; then
+        echo " little endian"
+        have=NGX_HAVE_LITTLE_ENDIAN . auto/have
+    else
+        echo " big endian"
+    fi
+
+    rm -rf $NGX_AUTOTEST*
+
+else
+    rm -rf $NGX_AUTOTEST*
+
+    echo
+    echo "$0: error: cannot detect system byte ordering"
+    exit 1
+fi
+</code></pre>
+
+<p>如果存在一个文件，其具备可执行的属性，即使这个文件的格式并不能在当前系统下运行，系统也会认为该文件可执行。<br>结合这个脚本，如果用交叉编译链编译出一个可执行文件，系统就会认为该文件可执行，所以判断并不能说明问题。<br>下面是实验过程和结果：</p>
+<pre><code>root@ubuntu:tmp# cat main.c 
+int main(void) {
+    int i = 0x11223344;
+    char *p;
+
+    p = (char *) &i;
+    if (*p == 0x44) return 0;
+    return 1;
+}
+root@ubuntu:tmp# 
+root@ubuntu:tmp# cat check.sh 
+#!/bin/sh
+
+NGX_AUTOTEST=/tmp/test
+if [ -x $NGX_AUTOTEST ]; then
+    if $NGX_AUTOTEST >/dev/null 2>&1; then
+        echo " little endian"
+    else
+        echo " big endian"
+    fi
+else
+    echo "$0: error: cannot detect system byte ordering"
+fi
+rm -rf $NGX_AUTOTEST*
+root@ubuntu:tmp# 
+root@ubuntu:tmp# /home/sdks/OpenWrt-SDK-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-i686/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-gcc -o test main.c
+root@ubuntu:tmp# 
+root@ubuntu:tmp# ./test 
+-bash: ./test: cannot execute binary file: Exec format error
+root@ubuntu:tmp#
+root@ubuntu:tmp# ./check.sh 
+ big endian
+root@ubuntu:tmp# 
+root@ubuntu:tmp# /home/sdks/one-arm-cross/bin/arm-linux-gcc -o test main.c
+root@ubuntu:tmp# 
+root@ubuntu:tmp# ./test 
+-bash: ./test: cannot execute binary file: Exec format error
+root@ubuntu:tmp#
+root@ubuntu:tmp# ./check.sh 
+ big endian
+root@ubuntu:tmp# 
+root@ubuntu:tmp# gcc -o test main.c
+root@ubuntu:tmp# 
+root@ubuntu:tmp# ./check.sh 
+ little endian
+root@ubuntu:tmp# 
+</code></pre>
+
+<p>可以看到用arp、mips编译器编译的结果，脚本都判定为big endian，其实这两个编译链编译出来的test文件并不能在host上执行的。</p>
+<p>所以在交叉编译的情况下，这个脚本目前只能手动设定大小端，则：</p>
+<pre><code># Copyright (C) Igor Sysoev
+# Copyright (C) Nginx, Inc.
+
+
+echo $ngx_n "checking for system byte ordering ...$ngx_c"
+
+cat << END >> $NGX_AUTOCONF_ERR
+
+----------------------------------------
+checking for system byte ordering
+
+END
+
+
+cat << END > $NGX_AUTOTEST.c
+
+#include <stdio.h>
+
+int main(void) {
+    int i = 0x11223344;
+    char *p;
+
+    p = (char *) &i;
+    printf("%d", *p);
+
+    return 0;
+}
+
+END
+
+ngx_test="$CC $CC_TEST_FLAGS $CC_AUX_FLAGS \
+          -o $NGX_AUTOTEST $NGX_AUTOTEST.c $NGX_LD_OPT $ngx_feature_libs"
+
+eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"
+
+if [ -x $NGX_AUTOTEST ]; then
+    ngx_value=`$NGX_AUTOTEST`
+fi
+
+rm -rf $NGX_AUTOTEST*
+
+#ngx_value=68    # for little endian
+#ngx_value=17    # for big endian
+case $ngx_value in
+    68)
+        echo " little endian"
+        have=NGX_HAVE_LITTLE_ENDIAN . auto/have
+    ;;
+
+    17)
+        echo " big endian"
+    ;;
+
+    *)
+
+        echo
+        echo "$0: error: cannot detect system byte ordering"
+        exit 1
+
+esac
+
+</code></pre>
+
+
+
+
+
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/cross-compile/" rel="tag"># cross compile</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/06/04/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/nginx%E7%9A%84%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%EF%BC%88%E4%B8%80%EF%BC%89/" rel="next" title="nginx的交叉编译（一）">
+                <i class="fa fa-chevron-left"></i> nginx的交叉编译（一）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/06/10/Openwrt%E4%B8%AD%E7%9A%84make-clean%E5%92%8Cmake-dirclean/" rel="prev" title="Openwrt中的make clean和make dirclean">
+                Openwrt中的make clean和make dirclean <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">小马哥</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#交叉编译器"><span class="nav-number">2.</span> <span class="nav-text">交叉编译器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#arm"><span class="nav-number">2.1.</span> <span class="nav-text">arm</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译器找不到错误"><span class="nav-number">2.1.1.</span> <span class="nav-text">编译器找不到错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无法检测int的大小"><span class="nav-number">2.1.2.</span> <span class="nav-text">无法检测int的大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#大小端的设定"><span class="nav-number">2.1.3.</span> <span class="nav-text">大小端的设定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mips"><span class="nav-number">2.2.</span> <span class="nav-text">mips</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">2.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#增加模块"><span class="nav-number">3.</span> <span class="nav-text">增加模块</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#zip"><span class="nav-number">3.1.</span> <span class="nav-text">zip</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rewrite"><span class="nav-number">3.2.</span> <span class="nav-text">rewrite</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ssl"><span class="nav-number">3.3.</span> <span class="nav-text">ssl</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#宿主机不同"><span class="nav-number">4.</span> <span class="nav-text">宿主机不同</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#附录"><span class="nav-number">5.</span> <span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#关于大小端"><span class="nav-number">5.1.</span> <span class="nav-text">关于大小端</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小马哥</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

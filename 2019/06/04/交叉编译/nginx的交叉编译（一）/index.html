@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,cross compile," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="官网相关通过 google 可以查到两个 nginx 的网站， http:&#x2F;&#x2F;nginx.org&#x2F; 和 https:&#x2F;&#x2F;www.nginx.com&#x2F;。其中前者是开源项目，后者是商业化项目，即nginx plus。两者的差别可以参考网上的一些文章，比如：https:&#x2F;&#x2F;www.nginx.com&#x2F;blog&#x2F;whats-difference-nginx-foss-nginx-plus&#x2F;，简单地说一个是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nginx的交叉编译（一）">
+<meta property="og:url" content="https://github.maxuming.com/2019/06/04/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/nginx%E7%9A%84%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%EF%BC%88%E4%B8%80%EF%BC%89/index.html">
+<meta property="og:site_name" content="小马的个人涂鸦">
+<meta property="og:description" content="官网相关通过 google 可以查到两个 nginx 的网站， http:&#x2F;&#x2F;nginx.org&#x2F; 和 https:&#x2F;&#x2F;www.nginx.com&#x2F;。其中前者是开源项目，后者是商业化项目，即nginx plus。两者的差别可以参考网上的一些文章，比如：https:&#x2F;&#x2F;www.nginx.com&#x2F;blog&#x2F;whats-difference-nginx-foss-nginx-plus&#x2F;，简单地说一个是">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-06-04T06:25:02.000Z">
+<meta property="article:modified_time" content="2019-06-10T03:38:53.282Z">
+<meta property="article:author" content="小马哥">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="cross compile">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://github.maxuming.com/2019/06/04/交叉编译/nginx的交叉编译（一）/"/>
+
+
+
+
+
+  <title>nginx的交叉编译（一） | 小马的个人涂鸦</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小马的个人涂鸦</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">点点滴滴</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://github.maxuming.com/2019/06/04/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/nginx%E7%9A%84%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%EF%BC%88%E4%B8%80%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="小马哥">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小马的个人涂鸦">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">nginx的交叉编译（一）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-04T14:25:02+08:00">
+                2019-06-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tech/" itemprop="url" rel="index">
+                    <span itemprop="name">tech</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="官网相关"><a href="#官网相关" class="headerlink" title="官网相关"></a>官网相关</h1><p>通过 google 可以查到两个 nginx 的网站， <a href="http://nginx.org/" target="_blank" rel="noopener" title="nginx 开源社区">http://nginx.org/</a> 和 <a href="https://www.nginx.com/" target="_blank" rel="noopener" title="nginx plus官网">https://www.nginx.com/</a>。其中前者是开源项目，后者是商业化项目，即nginx plus。<br>两者的差别可以参考网上的一些文章，比如：<a href="https://www.nginx.com/blog/whats-difference-nginx-foss-nginx-plus/" target="_blank" rel="noopener" title="nginx 和 nginx plus的区别">https://www.nginx.com/blog/whats-difference-nginx-foss-nginx-plus/</a>，简单地说一个是开源免费的+社区支持，一个是商业化收费+专人技术支持的。</p>
+<h2 id="安装包安装"><a href="#安装包安装" class="headerlink" title="安装包安装"></a>安装包安装</h2><p>对于常见的x86 linux系统来说，nginx的安装可以通过系统的安装工具来执行，比如：<br>RedHat 系列的Redhat、Centos、Fedora等可以用yum命令安装：yum install nginx<br>Debian 系列的Debian、Ubuntu等可以用apt-get命令安装：apt-get install nginx<br>本文对通过安装包安装nginx不做过多描述，具体可以参考 <a href="http://nginx.org/en/docs/install.html" target="_blank" rel="noopener" title="nginx安装说明">http://nginx.org/en/docs/install.html</a></p>
+<h2 id="编译安装"><a href="#编译安装" class="headerlink" title="编译安装"></a>编译安装</h2><p>对于自带编译系统的linux环境（通常是x86系统下的RedHat和Debian系列的Linux系统），nginx也可以通过直接的编译安装，我们以当前最新的稳定版本为例，大致步骤如下：</p>
+<pre><code>wget http://nginx.org/download/nginx-1.17.0.tar.gz
+tar -xzvf nginx-1.17.0.tar.gz
+cd nginx-1.17.0/
+</code></pre>
+
+<p>通过命令 find -name CMakeLists.txt 可以确认nginx使用的不是Cmake这套编译管理系统，看到根目录下有 configure 文件，所以便知编译应该是 configure、make、make install等步骤。</p>
+<h3 id="编译配置configure"><a href="#编译配置configure" class="headerlink" title="编译配置configure"></a>编译配置configure</h3><p>./configure –help 包含了很多内容：</p>
+<pre><code>./configure --help
+
+  --help                             print this message
+
+  --prefix=PATH                      set installation prefix
+  --sbin-path=PATH                   set nginx binary pathname
+  --modules-path=PATH                set modules path
+  --conf-path=PATH                   set nginx.conf pathname
+  --error-log-path=PATH              set error log pathname
+  --pid-path=PATH                    set nginx.pid pathname
+  --lock-path=PATH                   set nginx.lock pathname
+
+  --user=USER                        set non-privileged user for
+                                     worker processes
+  --group=GROUP                      set non-privileged group for
+                                     worker processes
+
+  --build=NAME                       set build name
+  --builddir=DIR                     set build directory
+
+  --with-select_module               enable select module
+  --without-select_module            disable select module
+  --with-poll_module                 enable poll module
+  --without-poll_module              disable poll module
+
+  --with-threads                     enable thread pool support
+
+  --with-file-aio                    enable file AIO support
+
+  --with-http_ssl_module             enable ngx_http_ssl_module
+  --with-http_v2_module              enable ngx_http_v2_module
+  --with-http_realip_module          enable ngx_http_realip_module
+  --with-http_addition_module        enable ngx_http_addition_module
+  --with-http_xslt_module            enable ngx_http_xslt_module
+  --with-http_xslt_module=dynamic    enable dynamic ngx_http_xslt_module
+  --with-http_image_filter_module    enable ngx_http_image_filter_module
+  --with-http_image_filter_module=dynamic
+                                     enable dynamic ngx_http_image_filter_module
+  --with-http_geoip_module           enable ngx_http_geoip_module
+  --with-http_geoip_module=dynamic   enable dynamic ngx_http_geoip_module
+  --with-http_sub_module             enable ngx_http_sub_module
+  --with-http_dav_module             enable ngx_http_dav_module
+  --with-http_flv_module             enable ngx_http_flv_module
+  --with-http_mp4_module             enable ngx_http_mp4_module
+  --with-http_gunzip_module          enable ngx_http_gunzip_module
+  --with-http_gzip_static_module     enable ngx_http_gzip_static_module
+  --with-http_auth_request_module    enable ngx_http_auth_request_module
+  --with-http_random_index_module    enable ngx_http_random_index_module
+  --with-http_secure_link_module     enable ngx_http_secure_link_module
+  --with-http_degradation_module     enable ngx_http_degradation_module
+  --with-http_slice_module           enable ngx_http_slice_module
+  --with-http_stub_status_module     enable ngx_http_stub_status_module
+
+  --without-http_charset_module      disable ngx_http_charset_module
+  --without-http_gzip_module         disable ngx_http_gzip_module
+  --without-http_ssi_module          disable ngx_http_ssi_module
+  --without-http_userid_module       disable ngx_http_userid_module
+  --without-http_access_module       disable ngx_http_access_module
+  --without-http_auth_basic_module   disable ngx_http_auth_basic_module
+  --without-http_mirror_module       disable ngx_http_mirror_module
+  --without-http_autoindex_module    disable ngx_http_autoindex_module
+  --without-http_geo_module          disable ngx_http_geo_module
+  --without-http_map_module          disable ngx_http_map_module
+  --without-http_split_clients_module disable ngx_http_split_clients_module
+  --without-http_referer_module      disable ngx_http_referer_module
+  --without-http_rewrite_module      disable ngx_http_rewrite_module
+  --without-http_proxy_module        disable ngx_http_proxy_module
+  --without-http_fastcgi_module      disable ngx_http_fastcgi_module
+  --without-http_uwsgi_module        disable ngx_http_uwsgi_module
+  --without-http_scgi_module         disable ngx_http_scgi_module
+  --without-http_grpc_module         disable ngx_http_grpc_module
+  --without-http_memcached_module    disable ngx_http_memcached_module
+  --without-http_limit_conn_module   disable ngx_http_limit_conn_module
+  --without-http_limit_req_module    disable ngx_http_limit_req_module
+  --without-http_empty_gif_module    disable ngx_http_empty_gif_module
+  --without-http_browser_module      disable ngx_http_browser_module
+  --without-http_upstream_hash_module
+                                     disable ngx_http_upstream_hash_module
+  --without-http_upstream_ip_hash_module
+                                     disable ngx_http_upstream_ip_hash_module
+  --without-http_upstream_least_conn_module
+                                     disable ngx_http_upstream_least_conn_module
+  --without-http_upstream_random_module
+                                     disable ngx_http_upstream_random_module
+  --without-http_upstream_keepalive_module
+                                     disable ngx_http_upstream_keepalive_module
+  --without-http_upstream_zone_module
+                                     disable ngx_http_upstream_zone_module
+
+  --with-http_perl_module            enable ngx_http_perl_module
+  --with-http_perl_module=dynamic    enable dynamic ngx_http_perl_module
+  --with-perl_modules_path=PATH      set Perl modules path
+  --with-perl=PATH                   set perl binary pathname
+
+  --http-log-path=PATH               set http access log pathname
+  --http-client-body-temp-path=PATH  set path to store
+                                     http client request body temporary files
+  --http-proxy-temp-path=PATH        set path to store
+                                     http proxy temporary files
+  --http-fastcgi-temp-path=PATH      set path to store
+                                     http fastcgi temporary files
+  --http-uwsgi-temp-path=PATH        set path to store
+                                     http uwsgi temporary files
+  --http-scgi-temp-path=PATH         set path to store
+                                     http scgi temporary files
+
+  --without-http                     disable HTTP server
+  --without-http-cache               disable HTTP cache
+
+  --with-mail                        enable POP3/IMAP4/SMTP proxy module
+  --with-mail=dynamic                enable dynamic POP3/IMAP4/SMTP proxy module
+  --with-mail_ssl_module             enable ngx_mail_ssl_module
+  --without-mail_pop3_module         disable ngx_mail_pop3_module
+  --without-mail_imap_module         disable ngx_mail_imap_module
+  --without-mail_smtp_module         disable ngx_mail_smtp_module
+
+  --with-stream                      enable TCP/UDP proxy module
+  --with-stream=dynamic              enable dynamic TCP/UDP proxy module
+  --with-stream_ssl_module           enable ngx_stream_ssl_module
+  --with-stream_realip_module        enable ngx_stream_realip_module
+  --with-stream_geoip_module         enable ngx_stream_geoip_module
+  --with-stream_geoip_module=dynamic enable dynamic ngx_stream_geoip_module
+  --with-stream_ssl_preread_module   enable ngx_stream_ssl_preread_module
+  --without-stream_limit_conn_module disable ngx_stream_limit_conn_module
+  --without-stream_access_module     disable ngx_stream_access_module
+  --without-stream_geo_module        disable ngx_stream_geo_module
+  --without-stream_map_module        disable ngx_stream_map_module
+  --without-stream_split_clients_module
+                                     disable ngx_stream_split_clients_module
+  --without-stream_return_module     disable ngx_stream_return_module
+  --without-stream_upstream_hash_module
+                                     disable ngx_stream_upstream_hash_module
+  --without-stream_upstream_least_conn_module
+                                     disable ngx_stream_upstream_least_conn_module
+  --without-stream_upstream_random_module
+                                     disable ngx_stream_upstream_random_module
+  --without-stream_upstream_zone_module
+                                     disable ngx_stream_upstream_zone_module
+
+  --with-google_perftools_module     enable ngx_google_perftools_module
+  --with-cpp_test_module             enable ngx_cpp_test_module
+
+  --add-module=PATH                  enable external module
+  --add-dynamic-module=PATH          enable dynamic external module
+
+  --with-compat                      dynamic modules compatibility
+
+  --with-cc=PATH                     set C compiler pathname
+  --with-cpp=PATH                    set C preprocessor pathname
+  --with-cc-opt=OPTIONS              set additional C compiler options
+  --with-ld-opt=OPTIONS              set additional linker options
+  --with-cpu-opt=CPU                 build for the specified CPU, valid values:
+                                     pentium, pentiumpro, pentium3, pentium4,
+                                     athlon, opteron, sparc32, sparc64, ppc64
+
+  --without-pcre                     disable PCRE library usage
+  --with-pcre                        force PCRE library usage
+  --with-pcre=DIR                    set path to PCRE library sources
+  --with-pcre-opt=OPTIONS            set additional build options for PCRE
+  --with-pcre-jit                    build PCRE with JIT compilation support
+
+  --with-zlib=DIR                    set path to zlib library sources
+  --with-zlib-opt=OPTIONS            set additional build options for zlib
+  --with-zlib-asm=CPU                use zlib assembler sources optimized
+                                     for the specified CPU, valid values:
+                                     pentium, pentiumpro
+
+  --with-libatomic                   force libatomic_ops library usage
+  --with-libatomic=DIR               set path to libatomic_ops library sources
+
+  --with-openssl=DIR                 set path to OpenSSL library sources
+  --with-openssl-opt=OPTIONS         set additional build options for OpenSSL
+
+  --with-debug                       enable debug logging
+
+root@AppUbuntu32:nginx-1.17.0#
+</code></pre>
+
+<p>我们重点看如下几个：</p>
+<h4 id="安装运行相关"><a href="#安装运行相关" class="headerlink" title="安装运行相关"></a>安装运行相关</h4><p>–prefix=path<br>表示编译后的安装目录，还有若干个子目录以该设置为基础，比如 –sbin-path, –modules-path, –conf-path</p>
+<p>–user=USER<br>–gourp=GROUP<br>这两个选项很多代码的configure文件是没有的，主要用于指定nginx工作进程用什么用户（组）运行，从而也就决定了nginx的访问权限，而且要求是非特权用户（即root或者有管理员权限的账户是不允许的），我理解这是因为nginx是一个服务，通过服务开放了一些系统资源给外部使用，如果使用管理员权限，则明显风险更大。</p>
+<p>–with-select_module<br>–without-select_module<br>–with-poll_module<br>–without-poll_module<br>nginx的核心功能之一就是接受请求、分发请求，nginx需要操作管理大量的请求，采用高效的系统API（select、poll、epoll）是nginx高效运行的基础，这些选项一般采用默认值即可，configure会根据系统情况选择最合适的方式。</p>
+<h4 id="功能模块和第三方库"><a href="#功能模块和第三方库" class="headerlink" title="功能模块和第三方库"></a>功能模块和第三方库</h4><p>接下去就是nginx支持的一些基础模块，比较容易理解的比如：ssl、zip、proxy等，这些要根据实际需要打开或者关闭。很多模块打开的时候，需要第三方库支持，比如ssl，就会用到openssl，在常见的系统中，一般也直接使用apt-get或者yum命令安装即可，比如下面一个报错(缺少第三方库)和（安装第三方库的）处理方式：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0#  ./configure --prefix=/tmp/_instal
+checking for OS
+ + Linux 4.4.0-31-generic i686
+checking for C compiler ... found
+ + using GNU C compiler
+ + gcc version: 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04.3) 
+checking for gcc -pipe switch ... found
+checking for -Wl,-E switch ... found
+......    # 省略了很多输出
+checking for struct dirent.d_namlen ... not found
+checking for struct dirent.d_type ... found
+checking for sysconf(_SC_NPROCESSORS_ONLN) ... found
+checking for sysconf(_SC_LEVEL1_DCACHE_LINESIZE) ... found
+checking for openat(), fstatat() ... found
+checking for getaddrinfo() ... found
+checking for PCRE library ... not found
+checking for PCRE library in /usr/local/ ... not found
+checking for PCRE library in /usr/include/pcre/ ... not found
+checking for PCRE library in /usr/pkg/ ... not found
+checking for PCRE library in /opt/local/ ... not found
+
+./configure: error: the HTTP rewrite module requires the PCRE library.
+You can either disable the module by using --without-http_rewrite_module
+option, or install the PCRE library into the system, or build the PCRE library
+statically from the source with nginx by using --with-pcre=<path> option.
+
+root@AppUbuntu32:nginx-1.17.0# 
+root@AppUbuntu32:nginx-1.17.0# apt-get install libpcre3-dev
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+The following extra packages will be installed:
+  libpcrecpp0
+The following NEW packages will be installed:
+  libpcre3-dev libpcrecpp0
+0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+Need to get 247 kB of archives.
+After this operation, 870 kB of additional disk space will be used.
+Do you want to continue? [Y/n] y
+Get:1 http://cn.archive.ubuntu.com/ubuntu/ trusty/main libpcrecpp0 i386 1:8.31-2ubuntu2 [14.7 kB]
+Get:2 http://cn.archive.ubuntu.com/ubuntu/ trusty/main libpcre3-dev i386 1:8.31-2ubuntu2 [232 kB]
+Fetched 247 kB in 1s (131 kB/s)       
+Selecting previously unselected package libpcrecpp0:i386.
+(Reading database ... 170757 files and directories currently installed.)
+Preparing to unpack .../libpcrecpp0_1%3a8.31-2ubuntu2_i386.deb ...
+Unpacking libpcrecpp0:i386 (1:8.31-2ubuntu2) ...
+Selecting previously unselected package libpcre3-dev:i386.
+Preparing to unpack .../libpcre3-dev_1%3a8.31-2ubuntu2_i386.deb ...
+Unpacking libpcre3-dev:i386 (1:8.31-2ubuntu2) ...
+Processing triggers for man-db (2.6.7.1-1ubuntu1) ...
+Setting up libpcrecpp0:i386 (1:8.31-2ubuntu2) ...
+Setting up libpcre3-dev:i386 (1:8.31-2ubuntu2) ...
+Processing triggers for libc-bin (2.19-0ubuntu6.9) ...
+root@AppUbuntu32:nginx-1.17.0# 
+
+</code></pre>
+
+<p>再比如下面一个类似的（缺少第三方库）报错和不同的处理方法，这个方法中我们（通过–without-http_gzip_module）直接关闭了http_gzip_module（假设我们不用这个功能），从而也避免了zip库不存在的报错：</p>
+<pre><code>
+root@AppUbuntu32:nginx-1.17.0# ./configure --prefix=/tmp/_install 
+checking for OS
+ + Linux 4.4.0-31-generic i686
+checking for C compiler ... found
+ + using GNU C compiler
+ + gcc version: 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04.3) 
+checking for gcc -pipe switch ... found
+checking for -Wl,-E switch ... found
+......        # 省略了很多输出
+checking for getaddrinfo() ... found
+checking for PCRE library ... found
+checking for PCRE JIT support ... found
+checking for zlib library ... not found
+
+./configure: error: the HTTP gzip module requires the zlib library.
+You can either disable the module by using --without-http_gzip_module
+option, or install the zlib library into the system, or build the zlib library
+statically from the source with nginx by using --with-zlib=<path> option.
+
+root@AppUbuntu32:nginx-1.17.0# 
+root@AppUbuntu32:nginx-1.17.0# ./configure --prefix=/tmp/_install --without-http_gzip_module
+checking for OS
+ + Linux 4.4.0-31-generic i686
+checking for C compiler ... found
+ + using GNU C compiler
+ + gcc version: 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04.3) 
+checking for gcc -pipe switch ... found
+checking for -Wl,-E switch ... found
+......        # 省略了很多输出
+checking for PCRE JIT support ... found
+creating objs/Makefile
+
+Configuration summary
+  + using system PCRE library
+  + OpenSSL library is not used
+  + zlib library is not used
+
+  nginx path prefix: "/tmp/_install"
+  nginx binary file: "/tmp/_install/sbin/nginx"
+  nginx modules path: "/tmp/_install/modules"
+  nginx configuration prefix: "/tmp/_install/conf"
+  nginx configuration file: "/tmp/_install/conf/nginx.conf"
+  nginx pid file: "/tmp/_install/logs/nginx.pid"
+  nginx error log file: "/tmp/_install/logs/error.log"
+  nginx http access log file: "/tmp/_install/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx http proxy temporary files: "proxy_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+  nginx http uwsgi temporary files: "uwsgi_temp"
+  nginx http scgi temporary files: "scgi_temp"
+
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<h4 id="编译工具相关"><a href="#编译工具相关" class="headerlink" title="编译工具相关"></a>编译工具相关</h4><p>还有一些选项和编译工具相关，即可以指定编译器和设定编译选项，比如：</p>
+<ul>
+<li>–with-cc</li>
+<li>–with-cpp</li>
+<li>–with–cc_opt</li>
+<li>–with-ld</li>
+<li>–with-ld_opt</li>
+</ul>
+<p>一般情况下，使用系统默认值即可。在交叉编译的环境下，就需要指定这些参数了。</p>
+<h4 id="待研究："><a href="#待研究：" class="headerlink" title="待研究："></a>待研究：</h4><ul>
+<li>–with-threads</li>
+<li>–with-file-aio</li>
+</ul>
+<h3 id="编译make"><a href="#编译make" class="headerlink" title="编译make"></a>编译make</h3><p>configure完成后，会有一段提示，类似如下：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# ./configure --prefix=/tmp/_install --without-http_gzip_module
+checking for OS
+ + Linux 4.4.0-31-generic i686
+checking for C compiler ... found
+ + using GNU C compiler
+ + gcc version: 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04.3) 
+checking for gcc -pipe switch ... found
+checking for -Wl,-E switch ... found
+......        # 省略了很多输出
+checking for PCRE JIT support ... found
+creating objs/Makefile
+
+Configuration summary
+  + using system PCRE library
+  + OpenSSL library is not used
+  + zlib library is not used
+
+  nginx path prefix: "/tmp/_install"
+  nginx binary file: "/tmp/_install/sbin/nginx"
+  nginx modules path: "/tmp/_install/modules"
+  nginx configuration prefix: "/tmp/_install/conf"
+  nginx configuration file: "/tmp/_install/conf/nginx.conf"
+  nginx pid file: "/tmp/_install/logs/nginx.pid"
+  nginx error log file: "/tmp/_install/logs/error.log"
+  nginx http access log file: "/tmp/_install/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx http proxy temporary files: "proxy_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+  nginx http uwsgi temporary files: "uwsgi_temp"
+  nginx http scgi temporary files: "scgi_temp"
+
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<p>从中可以看到我们这次配置打开了PCRE的支持（rewrite模块会用到），关闭了OpenSSL的支持（不支持ssl或者https），也关闭了zlib的支持</p>
+<pre><code>  + using system PCRE library
+  + OpenSSL library is not used
+  + zlib library is not used
+</code></pre>
+
+<p>之后可以执行make，最终输出类似如下：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# make 
+make -f objs/Makefile
+make[1]: Entering directory `/tmp/nginx-1.17.0'
+cc -c -pipe  -O -W -Wall -Wpointer-arith -Wno-unused-parameter -Werror -g  -I src/core -I src/event -I src/event/modules -I src/os/unix -I objs \
+        -o objs/src/core/nginx.o \
+        src/core/nginx.c
+...        # 省略了很多输出
+
+cc -c -pipe  -O -W -Wall -Wpointer-arith -Wno-unused-parameter -Werror -g  -I src/core -I src/event -I src/event/modules -I src/os/unix -I objs \
+        -o objs/ngx_modules.o \
+        objs/ngx_modules.c
+cc -o objs/nginx \
+    objs/src/core/nginx.o \
+    objs/src/core/ngx_log.o \
+    objs/src/core/ngx_palloc.o \
+...        # 省略了很多输出
+    objs/src/http/modules/ngx_http_upstream_random_module.o \
+    objs/src/http/modules/ngx_http_upstream_keepalive_module.o \
+    objs/src/http/modules/ngx_http_upstream_zone_module.o \
+    objs/ngx_modules.o \
+    -ldl -lpthread -lcrypt -lpcre \
+    -Wl,-E
+sed -e "s|%%PREFIX%%|/tmp/_install|" \
+        -e "s|%%PID_PATH%%|/tmp/_install/logs/nginx.pid|" \
+        -e "s|%%CONF_PATH%%|/tmp/_install/conf/nginx.conf|" \
+        -e "s|%%ERROR_LOG_PATH%%|/tmp/_install/logs/error.log|" \
+        < man/nginx.8 > objs/nginx.8
+make[1]: Leaving directory `/tmp/nginx-1.17.0'
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<p>如果没有指定 –builddir，那么build过程会在 objs 目录下执行，最终会生成可执行文件：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# find -name nginx
+./objs/nginx
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<p>当然，除了可执行文件外，还有若干配置文件，通过make install可以将相关文件都安装到 –prefix 指定的目录下</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# ls -l /tmp/_install
+total 0
+root@AppUbuntu32:nginx-1.17.0# 
+root@AppUbuntu32:nginx-1.17.0# make install 
+make -f objs/Makefile install
+make[1]: Entering directory `/tmp/nginx-1.17.0'
+test -d '/tmp/_install' || mkdir -p '/tmp/_install'
+test -d '/tmp/_install/sbin' \
+        || mkdir -p '/tmp/_install/sbin'
+test ! -f '/tmp/_install/sbin/nginx' \
+        || mv '/tmp/_install/sbin/nginx' \
+            '/tmp/_install/sbin/nginx.old'
+...        # 省略了很多输出
+test -d '/tmp/_install/logs' \
+        || mkdir -p '/tmp/_install/logs'
+make[1]: Leaving directory `/tmp/nginx-1.17.0'
+root@AppUbuntu32:nginx-1.17.0# 
+root@AppUbuntu32:nginx-1.17.0# 
+root@AppUbuntu32:nginx-1.17.0# ls -l /tmp/_install
+total 16
+drwxr-xr-x 2 root root 4096  6月  5 10:25 conf
+drwxr-xr-x 2 root root 4096  6月  5 10:25 html
+drwxr-xr-x 2 root root 4096  6月  5 10:25 logs
+drwxr-xr-x 2 root root 4096  6月  5 10:25 sbin
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<h3 id="观察"><a href="#观察" class="headerlink" title="观察"></a>观察</h3><p>make install 之后，会在我们指定的 –prefix 目录下生成若干个文件夹和文件，类似如下：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# cd /tmp/_install/
+root@AppUbuntu32:_install# 
+root@AppUbuntu32:_install# tree
+.
+├── conf
+│   ├── fastcgi.conf
+│   ├── fastcgi.conf.default
+│   ├── fastcgi_params
+│   ├── fastcgi_params.default
+│   ├── koi-utf
+│   ├── koi-win
+│   ├── mime.types
+│   ├── mime.types.default
+│   ├── nginx.conf
+│   ├── nginx.conf.default
+│   ├── scgi_params
+│   ├── scgi_params.default
+│   ├── uwsgi_params
+│   ├── uwsgi_params.default
+│   └── win-utf
+├── html
+│   ├── 50x.html
+│   └── index.html
+├── logs
+└── sbin
+    └── nginx
+
+4 directories, 18 files
+root@AppUbuntu32:_install# 
+</code></pre>
+
+<p>其中 sbin/nginx 是主要的可执行文件，html/ 下用于保存页面文件，css、img等也可以保存于该目录下。conf 目录下有较多的配置文件，最常用的就是 nginx.conf 文件。</p>
+<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><p>执行 ./sbin/nginx 可以直接运行，可以看到一旦运行 –prefix 目录下多出了若干个文件夹和文件，主要是一些临时文件和日志文件。</p>
+<pre><code>root@AppUbuntu32:sbin# ./nginx -
+root@AppUbuntu32:sbin# cd ..
+root@AppUbuntu32:_install# ls -l
+total 36
+drwx------ 2 nobody root 4096  6月  5 10:38 client_body_temp
+drwxr-xr-x 2 root   root 4096  6月  5 10:25 conf
+drwx------ 2 nobody root 4096  6月  5 10:38 fastcgi_temp
+drwxr-xr-x 2 root   root 4096  6月  5 10:25 html
+drwxr-xr-x 2 root   root 4096  6月  5 10:38 logs
+drwx------ 2 nobody root 4096  6月  5 10:38 proxy_temp
+drwxr-xr-x 2 root   root 4096  6月  5 10:25 sbin
+drwx------ 2 nobody root 4096  6月  5 10:38 scgi_temp
+drwx------ 2 nobody root 4096  6月  5 10:38 uwsgi_temp
+root@AppUbuntu32:_install# 
+root@AppUbuntu32:_install# 
+root@AppUbuntu32:_install# ls -l logs/
+total 4
+-rw-r--r-- 1 root root 0  6月  5 10:38 access.log
+-rw-r--r-- 1 root root 0  6月  5 10:38 error.log
+-rw-r--r-- 1 root root 6  6月  5 10:38 nginx.pid
+root@AppUbuntu32:_install# 
+root@AppUbuntu32:_install# 
+root@AppUbuntu32:_install# ps -aef | grep nginx
+root     14748     1  0 10:38 ?        00:00:00 nginx: master process ./nginx -
+nobody   14749 14748  0 10:38 ?        00:00:00 nginx: worker process
+root     14757 29900  0 10:39 pts/4    00:00:00 grep --color=auto nginx
+root@AppUbuntu32:_install# 
+</code></pre>
+
+<p>另外，可以看到有2个nginx进程，这是因为nginx采用主进程（管理工作进程）和工作进程的方式运行，其中工作进程数量可以配置，一般和cpu数量一致或者成倍数。</p>
+<h1 id="交叉编译"><a href="#交叉编译" class="headerlink" title="交叉编译"></a>交叉编译</h1><p>官网上，并没有描述交叉编译的介绍，这里根据实际情况做一些介绍。<br>编译过程同样分成：</p>
+<ul>
+<li>下载、解压缩</li>
+<li>配置</li>
+<li>编译</li>
+<li>安装</li>
+<li>以及解决第三方库依赖的问题</li>
+<li>报错以及问题解决</li>
+</ul>
+<h2 id="下载、解压缩"><a href="#下载、解压缩" class="headerlink" title="下载、解压缩"></a>下载、解压缩</h2><pre><code>root@AppUbuntu32:~# cd /tmp/
+root@AppUbuntu32:tmp# wget http://nginx.org/download/nginx-1.17.0.tar.gz
+root@AppUbuntu32:tmp# tar -xzvf nginx-1.17.0.tar.gz
+root@AppUbuntu32:tmp# cd nginx-1.17.0/
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>相对于宿主机直接编译宿主机的目标程序，交叉编译中配置环节相对复杂很多，这里做一些简单的说明：</p>
+<h3 id="交叉编译链"><a href="#交叉编译链" class="headerlink" title="交叉编译链"></a>交叉编译链</h3><p>首先，需要明确交叉编译和直接编译最主要的不一样是编译工具不一样，要使用目标机器的交叉编译链，从而实现编译后的二进制文件可以运行于目标机器上。这里有一款我系统中的arm的交叉编译链：</p>
+<pre><code>root@AppUbuntu32:one-arm-cross# pwd
+/home/sdks/one-arm-cross
+root@AppUbuntu32:one-arm-cross# ls -l
+total 28
+drwxrwxrwx 6 root root 4096  3月  3  2018 arm-buildroot-linux-gnueabi
+drwxrwxrwx 2 root root 4096  3月  3  2018 bin
+drwxrwxrwx 2 root root 4096  3月  3  2018 include
+drwxrwxrwx 5 root root 4096  3月  3  2018 lib
+drwxrwxrwx 4 root root 4096  3月  3  2018 libexec
+drwxrwxrwx 9 root root 4096  3月  3  2018 share
+-rwxrwxrwx 1 root root   72  3月  3  2018 version
+root@AppUbuntu32:one-arm-cross# 
+root@AppUbuntu32:one-arm-cross# ./bin/arm-linux-gcc -v
+Using built-in specs.
+COLLECT_GCC=./bin/arm-linux-gcc
+COLLECT_LTO_WRAPPER=/home/sdks/ruijieh10g/bin/../libexec/gcc/arm-buildroot-linux-gnueabi/4.8.5/lto-wrapper
+Target: arm-buildroot-linux-gnueabi
+Configured with: ./configure --prefix=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/usr --sysconfdir=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/etc --enable-static --target=arm-buildroot-linux-gnueabi --with-sysroot=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/usr/arm-buildroot-linux-gnueabi/sysroot --disable-__cxa_atexit --with-gnu-ld --disable-libssp --disable-multilib --with-gmp=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/usr --with-mpfr=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/usr --with-pkgversion='Buildroot 2015.08.1-svn724' --with-bugurl=http://bugs.buildroot.net/ --disable-libquadmath --enable-tls --disable-libmudflap --enable-threads --with-mpc=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/usr --without-isl --without-cloog --with-float=soft --disable-decimal-float --with-abi=aapcs-linux --with-cpu=cortex-a9 --with-float=soft --with-mode=arm --enable-languages=c,c++ --enable-poison-system-directories --with-build-time-tools=/home/zhou/newsvn/buildroot/buildroot-2015.08.1/output/host/usr/arm-buildroot-linux-gnueabi/bin --enable-shared --disable-libgomp --disable-libquadmath --with-gnu-as --disable-nls --enable-long-long --enable-lto --enable-c99 --with-arch=armv7-a
+Thread model: posix
+gcc version 4.8.5 (Buildroot 2015.08.1-svn724) 
+root@AppUbuntu32:one-arm-cross#
+</code></pre>
+
+<p>查看其gcc的版本，可以看到为 4.8.5，同时也可以看到生成该交叉编译链的一些基本信息。</p>
+<h3 id="使用交叉编译链配置"><a href="#使用交叉编译链配置" class="headerlink" title="使用交叉编译链配置"></a>使用交叉编译链配置</h3><p>交叉编译链目录下有若干个目录和较多的文件，我们需要关注的包括：</p>
+<ul>
+<li>–with-cc</li>
+<li>–with-cpp</li>
+<li>–with-cc_opt</li>
+<li>–with-ld</li>
+<li>–with-ld_opt</li>
+</ul>
+<pre><code>--with-cc 就是指定gcc： --with-cc=/home/sdks/one-arm-cross/bin/arm-linux-gcc
+--with-cpp 就是指定g++： --with-cpp=/home/sdks/one-arm-cross/bin/arm-linux-g++
+--with-ld 就是指定链接工具ld: --with-ld=/home/sdks/one-arm-cross/bin/arm-linux-ld
+
+对于指定cc和ld，cc和ld的选项相对复杂一些，一般cc要指定include目录、添加特定的宏，而ld一般要指定第三方库的目录，我这边的使用方式如下：
+--with-cc-opt="-I/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/include"
+--with-ld-opt="-L/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/lib"
+</code></pre>
+
+<p>另外为了简化过程，暂时去掉部分模块，比如ssl、zip等，所以配置命令如下：</p>
+<pre><code>./configure --prefix=/tmp/_install --with-cc=/home/sdks/one-arm-cross/bin/arm-linux-gcc --with-cpp=/home/sdks/one-arm-cross/bin/arm-linux-g++ --with-cc-opt="-I/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/include" --with-ld-opt="-L/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/lib" --without-http_rewrite_module --without-http_gzip_module --without-http_upstream_zone_module --without-http_charset_module --without-http_ssi_module --without-http_userid_module --without-http_access_module --without-http_auth_basic_module --without-http_autoindex_module --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module --without-http_proxy_module --without-http_uwsgi_module --without-http_scgi_module --without-http_memcached_module --without-http_limit_conn_module --without-http_limit_req_module --without-http_empty_gif_module --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module --without-http_upstream_keepalive_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module  --without-stream_limit_conn_module --without-stream_access_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_zone_module
+</code></pre>
+
+<p>这里会有一些报错，具体报错和如何解决参考后续<a href="#conf_err">章节</a>。</p>
+<p>和宿主机直接编译类似，配置完成后，会给出提示，类似如下：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# ./configure --prefix=/tmp/_install --with-cc=/home/sdks/one-arm-cross/bin/arm-linux-gcc --with-cpp=/home/sdks/one-arm-cross/bin/arm-linux-g++ --with-cc-opt="-I/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/include" --with-ld-opt="-L/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/lib" --without-http_rewrite_module --without-http_gzip_module --without-http_upstream_zone_module --without-http_charset_module --without-http_ssi_module --without-http_userid_module --without-http_access_module --without-http_auth_basic_module --without-http_autoindex_module --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module --without-http_proxy_module --without-http_uwsgi_module --without-http_scgi_module --without-http_memcached_module --without-http_limit_conn_module --without-http_limit_req_module --without-http_empty_gif_module --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module --without-http_upstream_keepalive_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module  --without-stream_limit_conn_module --without-stream_access_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module --without-stream_upstream_zone_module
+checking for OS
+ + Linux 4.4.0-31-generic i686
+checking for C compiler ... found
+ + using GNU C compiler
+ + gcc version: 4.8.5 (Buildroot 2015.08.1-svn724) 
+checking for gcc -pipe switch ... found
+checking for --with-ld-opt="-L/home/sdks/ruijieh10g/arm-buildroot-linux-gnueabi/sysroot/usr/lib" ... found
+
+...    ...    # 省略了很多输出
+
+checking for getaddrinfo() ... found
+creating objs/Makefile
+
+Configuration summary
+  + PCRE library is not used
+  + OpenSSL library is not used
+  + zlib library is not used
+
+  nginx path prefix: "/tmp/_install"
+  nginx binary file: "/tmp/_install/sbin/nginx"
+  nginx modules path: "/tmp/_install/modules"
+  nginx configuration prefix: "/tmp/_install/conf"
+  nginx configuration file: "/tmp/_install/conf/nginx.conf"
+  nginx pid file: "/tmp/_install/logs/nginx.pid"
+  nginx error log file: "/tmp/_install/logs/error.log"
+  nginx http access log file: "/tmp/_install/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+
+root@AppUbuntu32:nginx-1.17.0# 
+</code></pre>
+
+<h2 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h2><p>执行make，即可完成编译。如果遇到错误，参考一下后续<a href="#make_err">章节</a>。</p>
+<h2 id="安装和运行"><a href="#安装和运行" class="headerlink" title="安装和运行"></a>安装和运行</h2><p>安装可以执行 make install，在prefix目录下会出现若干个文件夹，里面包含了若干个配置文件和可执行文件等。<br>将这些文件复制到目标机器上既可以运行了。</p>
+<p>这里需要注意：目标机器的上保存或者运行nginx的路径要和prefix一致，否则直接运行会导致nginx找不到配置文件。</p>
+<h2 id="配置错误以及解决方法"><a href="#配置错误以及解决方法" class="headerlink" title="配置错误以及解决方法"></a>配置错误以及解决方法</h2><p><span id="conf_err"></span><br>执行configure命令的时候，陆陆续续会有若干错误，这里笔者把自己遇到过的错误和解决方法给出，可能解决方法并不是最合适的，但是使用下来是可以解决问题的。</p>
+<h3 id="编译器找不到错误"><a href="#编译器找不到错误" class="headerlink" title="编译器找不到错误"></a>编译器找不到错误</h3><p>报错现象：</p>
+<pre><code>./configure: error: C compiler /home/sdks/one-arm-cross/bin/arm-linux-gcc is not found
+</code></pre>
+
+<p>先给出解决办法：<br>修改 auto/feature 大概 42行，把 $CC 修改成 gcc.</p>
+<p>修改前：</p>
+<pre><code>cat << END > $NGX_AUTOTEST.c
+
+#include <sys/types.h>
+$NGX_INCLUDE_UNISTD_H
+$ngx_feature_incs
+
+int main(void) {
+    $ngx_feature_test;
+    return 0;
+}
+
+END
+
+
+ngx_test="$CC $CC_TEST_FLAGS $CC_AUX_FLAGS $ngx_feature_inc_path \
+          -o $NGX_AUTOTEST $NGX_AUTOTEST.c $NGX_TEST_LD_OPT $ngx_feature_libs"
+
+ngx_feature_inc_path=
+
+eval "/bin/sh -c \"$ngx_test\" >> $NGX_AUTOCONF_ERR 2>&1"
+</code></pre>
+
+<p>修改后：</p>
+<pre><code>cat << END > $NGX_AUTOTEST.c
+
+#include <sys/types.h>
+$NGX_INCLUDE_UNISTD_H
+$ngx_feature_incs
+
+int main(void) {
+    $ngx_feature_test;
+    return 0;
+}
+
+END
+
+
+ngx_test="gcc $CC_TEST_FLAGS $CC_AUX_FLAGS $ngx_feature_inc_path \
+          -o $NGX_AUTOTEST $NGX_AUTOTEST.c $NGX_TEST_LD_OPT $ngx_feature_libs"
+
+ngx_feature_inc_path=
+
+eval "/bin/sh -c \"$ngx_test\" >> $NGX_AUTOCONF_ERR 2>&1"
+</code></pre>
+
+
+<p>报错原因：<br>configure尝试用–with-cc指定的编译器编译一个程序进行运行，用于验证cc工具、以及检查cpu位数、大小端等，但是因为是交叉编译，交叉编译器编译生成的程序并不能在宿主机上运行，所以导致configure报错，大致的报错位置如下：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# grep "C compiler" -r .  | grep "is not found"
+./auto/cc/name:        echo $0: error: C compiler $CC is not found
+root@AppUbuntu32:nginx-1.17.0#
+root@AppUbuntu32:nginx-1.17.0# cat auto/cc/name | more
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) Nginx, Inc.
+
+
+if [ "$NGX_PLATFORM" != win32 ]; then
+
+    ngx_feature="C compiler"
+    ngx_feature_name=
+    ngx_feature_run=yes
+    ngx_feature_incs=
+    ngx_feature_path=
+    ngx_feature_libs=
+    ngx_feature_test=
+    . auto/feature
+
+    if [ $ngx_found = no ]; then
+        echo
+        echo $0: error: C compiler $CC is not found
+        echo
+        exit 1
+    fi
+
+fi
+</code></pre>
+
+<p>从上面的脚本来看，变量 ngx_found 的值如果是 no，则报错退出，再初略的查找变量 ngx_found 的复制位置：</p>
+<pre><code>root@AppUbuntu32:nginx-1.17.0# grep "ngx_found=" -r . 
+./auto/feature:ngx_found=no
+./auto/feature:                ngx_found=yes
+./auto/feature:                ngx_found=yes
+./auto/feature:                ngx_found=yes
+./auto/feature:            ngx_found=yes
+./auto/types/typedef:ngx_found=no
+./auto/types/typedef:            ngx_found=yes
+./auto/types/typedef:            ngx_found=$ngx_try
+./auto/lib/zlib/conf:            ngx_found=no
+./auto/include:ngx_found=no
+./auto/include:    ngx_found=yes
+root@AppUbuntu32:nginx-1.17.0#
+</code></pre>
+
+<p>可以看到由若干个类似的地方，通过编译一段程序来检查编译器、大小端等。</p>
+<h3 id="无法检测int的大小"><a href="#无法检测int的大小" class="headerlink" title="无法检测int的大小"></a>无法检测int的大小</h3><p>报错现象：</p>
+<pre><code>checking for int size ...objs/autotest: 1: objs/autotest: Syntax error: word unexpected (expecting ")")
+  bytes
+
+./configure: error: can not detect int size
+</code></pre>
+
+<p>先给出解决办法：<br>修改 auto/cc/sizeof 大概 36 行，把 $CC 修改成 gcc.<br>另外根据目标机的实际情况，要修改变量 ngx_size 的值，比如我的系统中目标机器是32位的，则大概 46 行左右，设置：ngx_size=4</p>
+<p>修改前：</p>
+<pre><code>cat << END > $NGX_AUTOTEST.c
+
+#include <sys/types.h>
+#include <sys/time.h>
+$NGX_INCLUDE_UNISTD_H
+#include <signal.h>
+#include <stdio.h>
+#include <sys/resource.h>
+$NGX_INCLUDE_INTTYPES_H
+$NGX_INCLUDE_AUTO_CONFIG_H
+
+int main(void) {
+    printf("%d", (int) sizeof($ngx_type));
+    return 0;
+}
+
+END
+
+
+ngx_test="$CC $CC_TEST_FLAGS $CC_AUX_FLAGS \
+          -o $NGX_AUTOTEST $NGX_AUTOTEST.c $NGX_LD_OPT $ngx_feature_libs"
+
+eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"
+
+
+if [ -x $NGX_AUTOTEST ]; then
+    ngx_size=`$NGX_AUTOTEST`
+    echo " $ngx_size bytes"
+fi
+
+
+case $ngx_size in
+    4)
+        ngx_max_value=2147483647
+        ngx_max_len='(sizeof("-2147483648") - 1)'
+    ;;
+
+</code></pre>
+
+<p>修改后：</p>
+<pre><code>cat << END > $NGX_AUTOTEST.c
+
+#include <sys/types.h>
+#include <sys/time.h>
+$NGX_INCLUDE_UNISTD_H
+#include <signal.h>
+#include <stdio.h>
+#include <sys/resource.h>
+$NGX_INCLUDE_INTTYPES_H
+$NGX_INCLUDE_AUTO_CONFIG_H
+
+int main(void) {
+    printf("%d", (int) sizeof($ngx_type));
+    return 0;
+}
+
+END
+
+
+ngx_test="gcc $CC_TEST_FLAGS $CC_AUX_FLAGS \
+          -o $NGX_AUTOTEST $NGX_AUTOTEST.c $NGX_LD_OPT $ngx_feature_libs"
+
+eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"
+
+
+if [ -x $NGX_AUTOTEST ]; then
+    ngx_size=`$NGX_AUTOTEST`
+    echo " $ngx_size bytes"
+fi
+
+ngx_size=4
+
+case $ngx_size in
+    4)
+        ngx_max_value=2147483647
+        ngx_max_len='(sizeof("-2147483648") - 1)'
+    ;;
+
+</code></pre>
+
+<p>错误原因：<br>和前一个错误类似，configure尝试用指定的编译器编译一小段程序，来检查int类型的大小（cpu的位数），但是交叉编译链编译的程序无法在宿主机运行，所以无法detect int size。</p>
+<h3 id="大小端的设定"><a href="#大小端的设定" class="headerlink" title="大小端的设定"></a>大小端的设定</h3><p>configure还会自动检测目标主机的大小端情况，但是目前看来这个检测是有问题的（同时，也没有报错），所以需要手动设置，具体参考下一篇文章。</p>
+<h2 id="编译错误以及解决方法"><a href="#编译错误以及解决方法" class="headerlink" title="编译错误以及解决方法 "></a>编译错误以及解决方法 <span id="make_err"></span></h2><p>有些版本的nginx在编译的时候，还会遇到若干报错（待补充）。</p>
+<h1 id="更多交叉编译"><a href="#更多交叉编译" class="headerlink" title="更多交叉编译"></a>更多交叉编译</h1><p>前面描述的交叉编译中，我们为了降低难度，去掉了很多模块，包括zip、ssl等，本章节中给出方法，描述不去掉这些模块的情况下如何编译。<br>另外，除了arm架构的交叉编译，还会尝试mips架构的交叉编译；还会尝试不同版本linux内核（包括openwrt系统）的交叉编译。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/cross-compile/" rel="tag"># cross compile</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/10/31/iptables-openwrt-default-firewall/" rel="next" title="iptables openwrt default firewall">
+                <i class="fa fa-chevron-left"></i> iptables openwrt default firewall
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/06/06/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/nginx%E7%9A%84%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%EF%BC%88%E4%BA%8C%EF%BC%89/" rel="prev" title="nginx的交叉编译（二）（未完成）">
+                nginx的交叉编译（二）（未完成） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">小马哥</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#官网相关"><span class="nav-number">1.</span> <span class="nav-text">官网相关</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装包安装"><span class="nav-number">1.1.</span> <span class="nav-text">安装包安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译安装"><span class="nav-number">1.2.</span> <span class="nav-text">编译安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译配置configure"><span class="nav-number">1.2.1.</span> <span class="nav-text">编译配置configure</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#安装运行相关"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">安装运行相关</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#功能模块和第三方库"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">功能模块和第三方库</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编译工具相关"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">编译工具相关</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#待研究："><span class="nav-number">1.2.1.4.</span> <span class="nav-text">待研究：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译make"><span class="nav-number">1.2.2.</span> <span class="nav-text">编译make</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#观察"><span class="nav-number">1.2.3.</span> <span class="nav-text">观察</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#运行"><span class="nav-number">1.2.4.</span> <span class="nav-text">运行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#交叉编译"><span class="nav-number">2.</span> <span class="nav-text">交叉编译</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#下载、解压缩"><span class="nav-number">2.1.</span> <span class="nav-text">下载、解压缩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置"><span class="nav-number">2.2.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#交叉编译链"><span class="nav-number">2.2.1.</span> <span class="nav-text">交叉编译链</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用交叉编译链配置"><span class="nav-number">2.2.2.</span> <span class="nav-text">使用交叉编译链配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译"><span class="nav-number">2.3.</span> <span class="nav-text">编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装和运行"><span class="nav-number">2.4.</span> <span class="nav-text">安装和运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置错误以及解决方法"><span class="nav-number">2.5.</span> <span class="nav-text">配置错误以及解决方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译器找不到错误"><span class="nav-number">2.5.1.</span> <span class="nav-text">编译器找不到错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无法检测int的大小"><span class="nav-number">2.5.2.</span> <span class="nav-text">无法检测int的大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#大小端的设定"><span class="nav-number">2.5.3.</span> <span class="nav-text">大小端的设定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译错误以及解决方法"><span class="nav-number">2.6.</span> <span class="nav-text">编译错误以及解决方法 </span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#更多交叉编译"><span class="nav-number">3.</span> <span class="nav-text">更多交叉编译</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小马哥</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
