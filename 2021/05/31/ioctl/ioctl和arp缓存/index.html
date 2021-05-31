@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="概述socket编码通讯的时候，目的地址一般都是域名或者对端的IP地址，如果是域名先有一个域名解析的过程以获取到对端的IP地址，在以太网通讯中，IP属于三层通讯，往下的第二层是MAC地址，如果是局域网通讯就需要根据IP地址查询到MAC地址，填充第二层的数据包。arp缓存就是为了方便快速查找mac地址而设计的，通常有以太网协议栈自己维护的，所以并不需要我们主动参与。 系统提供的命令和接口Linux系">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ioctl&#x2F;ioctl和arp缓存">
+<meta property="og:url" content="https://github.maxuming.com/2021/05/31/ioctl/ioctl%E5%92%8Carp%E7%BC%93%E5%AD%98/index.html">
+<meta property="og:site_name" content="小马的个人涂鸦">
+<meta property="og:description" content="概述socket编码通讯的时候，目的地址一般都是域名或者对端的IP地址，如果是域名先有一个域名解析的过程以获取到对端的IP地址，在以太网通讯中，IP属于三层通讯，往下的第二层是MAC地址，如果是局域网通讯就需要根据IP地址查询到MAC地址，填充第二层的数据包。arp缓存就是为了方便快速查找mac地址而设计的，通常有以太网协议栈自己维护的，所以并不需要我们主动参与。 系统提供的命令和接口Linux系">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-05-31T06:33:18.457Z">
+<meta property="article:modified_time" content="2021-05-31T06:30:13.926Z">
+<meta property="article:author" content="小马哥">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content=" c">
+<meta property="article:tag" content=" iptables">
+<meta property="article:tag" content=" Tensorflow">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://github.maxuming.com/2021/05/31/ioctl/ioctl和arp缓存/"/>
+
+
+
+
+
+  <title>ioctl/ioctl和arp缓存 | 小马的个人涂鸦</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小马的个人涂鸦</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">点点滴滴</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://github.maxuming.com/2021/05/31/ioctl/ioctl%E5%92%8Carp%E7%BC%93%E5%AD%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="小马哥">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小马的个人涂鸦">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">ioctl/ioctl和arp缓存</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-05-31T14:33:18+08:00">
+                2021-05-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>socket编码通讯的时候，目的地址一般都是域名或者对端的IP地址，如果是域名先有一个域名解析的过程以获取到对端的IP地址，在以太网通讯中，IP属于三层通讯，往下的第二层是MAC地址，如果是局域网通讯就需要根据IP地址查询到MAC地址，填充第二层的数据包。<br>arp缓存就是为了方便快速查找mac地址而设计的，通常有以太网协议栈自己维护的，所以并不需要我们主动参与。</p>
+<h1 id="系统提供的命令和接口"><a href="#系统提供的命令和接口" class="headerlink" title="系统提供的命令和接口"></a>系统提供的命令和接口</h1><p>Linux系统提供了一些操作命令和接口文件，方便用户查看、操作arp缓存，命令包括arp、ip neigh等，还有接口文件 /proc/net/arp，简单说明如下。</p>
+<h2 id="arp命令操作"><a href="#arp命令操作" class="headerlink" title="arp命令操作"></a>arp命令操作</h2><p>Linux中用命令 arp 来实现arp缓存的查询、和增删操作，命令具体使用方式通过 arp -h 或者 man arp，可以查看，比如：</p>
+<ol>
+<li>arp -an 可以查看当前 arp 缓存的记录</li>
+<li>arp -i 可以查看指定网卡的 arp 缓存的记录</li>
+<li>arp -d 192.168.1.x 可以删除一条记录</li>
+<li>arp -s 192.168.1.x aa:bb:cc:ee:dd:11 temp 可以新增一条临时记录，当然arp命令会判断host（192.168.1.x）是否合理（可以匹配到某一张网卡的网段）。</li>
+</ol>
+<h2 id="ip-neigh-命令操作"><a href="#ip-neigh-命令操作" class="headerlink" title="ip neigh 命令操作"></a>ip neigh 命令操作</h2><p>事实上 arp 命令已经被标记为 obsolete , 推荐使用 ip neigh 命令来代替 arp 命令，虽然我觉得 arp 命令更加直观简单。</p>
+<p>同样可以用 ip neigh help 来查看使用方法：</p>
+<pre><code># ip neigh help
+Usage: ip neigh { add | del | change | replace }
+        { ADDR [ lladdr LLADDR ] [ nud STATE ] | proxy ADDR } [ dev DEV ]
+        [ router ] [ extern_learn ] [ protocol PROTO ]
+
+    ip neigh { show | flush } [ proxy ] [ to PREFIX ] [ dev DEV ] [ nud STATE ]
+                  [ vrf NAME ]
+
+STATE := { permanent | noarp | stale | reachable | none |
+           incomplete | delay | probe | failed }</code></pre><h2 id="proc-文件查看"><a href="#proc-文件查看" class="headerlink" title="proc 文件查看"></a>proc 文件查看</h2><p>另外，还可以通过文件查看当前缓存情况：</p>
+<pre><code># cat /proc/net/arp 
+IP address       HW type     Flags       HW address            Mask     Device
+172.18.89.100    0x1         0x2         aa:bb:cc:ee:dd:11     *        ens34
+172.18.89.1      0x1         0x2         00:50:56:c0:00:01     *        ens34
+172.18.145.254   0x1         0x2         00:50:56:e3:75:35     *        ens33
+172.18.145.2     0x1         0x2         00:50:56:ea:60:d5     *        ens33</code></pre><h1 id="ioctl-代码支持-arp-的相关操作"><a href="#ioctl-代码支持-arp-的相关操作" class="headerlink" title="ioctl 代码支持 arp 的相关操作"></a>ioctl 代码支持 arp 的相关操作</h1><p>实际我们代码中，如果要查看、修改 arp 缓存，我们可以利用system或者popen，加上上面的命令来完成编码，但是形式上有点丑陋。</p>
+<p>另外，也可以通过 ioctl 函数来完成对 arp 缓存的操作，包括查询、增加（修改）和删除，下面逐一说明。</p>
+<p>先看几个结构体和宏定义：</p>
+<pre><code>#define SIOCDARP        0x8953          /* delete ARP table entry       */
+#define SIOCGARP        0x8954          /* get ARP table entry          */
+#define SIOCSARP        0x8955          /* set ARP table entry          */
+
+#define ATF_COM         0x02            /* completed entry (ha valid)   */
+#define ATF_PERM        0x04            /* permanent entry              */
+#define ATF_PUBL        0x08            /* publish entry                */
+#define ATF_USETRAILERS 0x10            /* has requested trailers       */
+#define ATF_NETMASK     0x20            /* want to use a netmask (only for proxy entries) */
+#define ATF_DONTPUB     0x40            /* don&apos;t answer this addresses  */
+
+struct arpreq {
+        struct sockaddr arp_pa;         /* protocol address              */
+        struct sockaddr arp_ha;         /* hardware address              */
+        int             arp_flags;      /* flags                         */
+        struct sockaddr arp_netmask;    /* netmask (only for proxy arps) */
+        char            arp_dev[IFNAMSIZ];
+};</code></pre><h2 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h2><p>ioctl 可以根据ip地址查询mac地址（可惜不能根据 mac 查询 ip）：</p>
+<pre><code>static int do_test_ioctol_case0()
+{
+    const char *dev = &quot;enp4s0&quot;;
+    const char *host = &quot;192.168.3.101&quot;;
+    int sockfd = -1;
+    struct arpreq arpreqest;
+    struct sockaddr_in *arp_pa = (struct sockaddr_in *)&amp;arpreqest.arp_pa;
+    unsigned char *mac = NULL;
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  明确要获取哪一张网卡的信息，用网卡的名称来指示
+    memset(&amp;arpreqest, 0, sizeof(arpreqest));
+    strncpy(arpreqest.arp_dev, dev, IFNAMSIZ);
+
+    arp_pa-&gt;sin_family = AF_INET;
+    arp_pa-&gt;sin_addr.s_addr = inet_addr(host);
+
+    if(ioctl(sockfd, SIOCGARP, &amp;arpreqest) &lt; 0)
+    {
+        if(ENXIO == errno)
+        {
+            //  设备名称不对，设备不存在
+            printf(&quot;Failed to find host(%s)\n&quot;, host);
+        }
+        else if(ENODEV == errno)
+        {
+            //  找不到这条记录
+            printf(&quot;Failed to find dev(%s)\n&quot;, dev);
+        }
+        else
+        {
+            //  其他错误
+            printf(&quot;Failed to exec(SIOCGARP): %m\n&quot;);
+        }
+
+        goto out;
+    }
+
+    if(arpreqest.arp_flags &amp; ATF_COM)
+    {
+        //  有完整的记录，就表示有mac地址
+        mac = (unsigned char *)&amp;arpreqest.arp_ha.sa_data[0];
+        printf(&quot;Host(%s)&apos;s hardware address is: %02x:%02x:%02x:%02x:%02x:%02x&quot;, host, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    }
+    if(arpreqest.arp_flags &amp; ATF_PERM)
+    {
+        printf(&quot;\t%s&quot;, &quot;Permanent&quot;);
+    }
+    if(arpreqest.arp_flags &amp; ATF_PUBL)
+    {
+        printf(&quot;\t%s&quot;, &quot;Publish&quot;);
+    }
+    if(arpreqest.arp_flags &amp; ATF_USETRAILERS)
+    {
+        printf(&quot;\t%s&quot;, &quot;Has requested trailers&quot;);
+    }
+    if(arpreqest.arp_flags &amp; ATF_NETMASK)
+    {
+        printf(&quot;\t%s&quot;, &quot;Use a netmask&quot;);
+    }
+    if(arpreqest.arp_flags &amp; ATF_DONTPUB)
+    {
+        printf(&quot;\t%s&quot;, &quot;Don&apos;s answer this addresses&quot;);
+    }
+
+    printf(&quot;\n&quot;);
+
+out:
+    close(sockfd);
+
+    return 0;
+}</code></pre><h2 id="增加"><a href="#增加" class="headerlink" title="增加"></a>增加</h2><p>增加记录的代码和查询的比较类似，需要注意的是查询只写 ip 地址，增加需要填写 ip和mac 地址：</p>
+<pre><code>static int do_test_ioctol_case1()
+{
+    const char *dev = &quot;enp4s0&quot;;
+    const char *host = &quot;192.168.3.102&quot;;
+    const char *macstr = &quot;11:22:33:aa:bb:ce&quot;;
+
+    int sockfd = -1;
+    struct arpreq arpreqest;
+    struct sockaddr_in *arp_pa = (struct sockaddr_in *)&amp;arpreqest.arp_pa;
+    unsigned char mac[6] = {0};
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  明确要获取哪一张网卡的信息，用网卡的名称来指示
+    memset(&amp;arpreqest, 0, sizeof(arpreqest));
+
+    strncpy(arpreqest.arp_dev, dev, IFNAMSIZ);
+    // arpreqest.arp_flags = ATF_PERM | ATF_COM;
+    arpreqest.arp_flags = ATF_COM;
+
+    arp_pa-&gt;sin_family = AF_INET;
+    arp_pa-&gt;sin_addr.s_addr = inet_addr(host);
+
+    sscanf(macstr, &quot;%hhx:%hhx:%hhx:%hhx:%hhx:%hhx&quot;, &amp;mac[0], &amp;mac[1], &amp;mac[2], &amp;mac[3], &amp;mac[4], &amp;mac[5]);
+    memcpy((unsigned char*)arpreqest.arp_ha.sa_data, mac, 6);
+    // get_hw_addr((unsigned char*)arpreqest.arp_ha.sa_data, mac);
+
+    if(ioctl(sockfd, SIOCSARP, &amp;arpreqest) &lt; 0)
+    {
+        if(ENXIO == errno)
+        {
+            //  设备名称不对，设备不存在
+            printf(&quot;Failed to find host(%s)\n&quot;, host);
+        }
+        else if(ENODEV == errno)
+        {
+            //  找不到这条记录
+            printf(&quot;Failed to find dev(%s)\n&quot;, dev);
+        }
+        else
+        {
+            //  其他错误
+            printf(&quot;Failed to exec(SIOCGARP): %m\n&quot;);
+        }
+
+        goto out;
+    }
+
+    printf(&quot;\n&quot;);
+
+out:
+    close(sockfd);
+
+    return 0;
+}</code></pre><h2 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h2><p>删除的代码可以和增加的代码几乎完全一样，ioctl 的第二个参数不一样而已：</p>
+<pre><code>static int do_test_ioctol_case2()
+{
+    const char *dev = &quot;enp4s0&quot;;
+    const char *host = &quot;192.168.3.102&quot;;
+    // const char *macstr = &quot;11:22:33:aa:bb:ce&quot;;
+
+    int sockfd = -1;
+    struct arpreq arpreqest;
+    struct sockaddr_in *arp_pa = (struct sockaddr_in *)&amp;arpreqest.arp_pa;
+    // unsigned char mac[6] = {0};
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  明确要获取哪一张网卡的信息，用网卡的名称来指示
+    memset(&amp;arpreqest, 0, sizeof(arpreqest));
+
+    strncpy(arpreqest.arp_dev, dev, IFNAMSIZ);
+    // arpreqest.arp_flags = ATF_PERM | ATF_COM;
+    // arpreqest.arp_flags = ATF_COM;
+
+    arp_pa-&gt;sin_family = AF_INET;
+    arp_pa-&gt;sin_addr.s_addr = inet_addr(host);
+
+    //  删除的时候，可以不设置mac地址，只设置IP地址。但是不能确ip地址。
+    // sscanf(macstr, &quot;%hhx:%hhx:%hhx:%hhx:%hhx:%hhx&quot;, &amp;mac[0], &amp;mac[1], &amp;mac[2], &amp;mac[3], &amp;mac[4], &amp;mac[5]);
+    // memcpy((unsigned char*)arpreqest.arp_ha.sa_data, mac, 6);
+
+    if(ioctl(sockfd, SIOCDARP, &amp;arpreqest) &lt; 0)
+    {
+        if(ENXIO == errno)
+        {
+            //  设备名称不对，设备不存在
+            printf(&quot;Failed to find host(%s)\n&quot;, host);
+        }
+        else if(ENODEV == errno)
+        {
+            //  找不到这条记录
+            printf(&quot;Failed to find dev(%s)\n&quot;, dev);
+        }
+        else
+        {
+            //  其他错误
+            printf(&quot;Failed to exec(SIOCGARP): %m\n&quot;);
+        }
+
+        goto out;
+    }
+
+    printf(&quot;\n&quot;);
+
+out:
+    close(sockfd);
+
+    return 0;
+}</code></pre><h2 id="重要结构体回顾："><a href="#重要结构体回顾：" class="headerlink" title="重要结构体回顾："></a>重要结构体回顾：</h2><h3 id="struct-arpreq"><a href="#struct-arpreq" class="headerlink" title="struct arpreq"></a>struct arpreq</h3><pre><code>struct arpreq {
+        struct sockaddr arp_pa;         /* protocol address              */
+        struct sockaddr arp_ha;         /* hardware address              */
+        int             arp_flags;      /* flags                         */
+        struct sockaddr arp_netmask;    /* netmask (only for proxy arps) */
+        char            arp_dev[IFNAMSIZ];
+};</code></pre><ol>
+<li><p>这个结构体中，不管哪个操作都需要正确设置 arp_dev。</p>
+</li>
+<li><p>struct sockaddr arp_pa    不管什么操作，这个用于设置IP地址，需要注意的是记得设置协议类型（比如IPV4用AT_INET）。</p>
+</li>
+<li><p>struct sockaddr arp_ha    设置操作，设置mac地址；查询操作，返回的mac地址保存于这个结构体中；删除操作，该字段不起作用。</p>
+</li>
+<li><p>int arp_flags    有以下几个可选项</p>
+<pre><code>#define ATF_COM         0x02            /* completed entry (ha valid)   */
+#define ATF_PERM        0x04            /* permanent entry              */
+#define ATF_PUBL        0x08            /* publish entry                */
+#define ATF_USETRAILERS 0x10            /* has requested trailers       */
+#define ATF_NETMASK     0x20            /* want to use a netmask (only for proxy entries) */
+#define ATF_DONTPUB     0x40            /* don&apos;t answer this addresses  */</code></pre></li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/07/22/vpp/vpp%E4%B8%80%E7%82%B9%E5%8F%88%E4%B8%80%E7%82%B9%E3%81%AEvppctl/" rel="next" title="vpp/vpp一点又一点のvppctl">
+                <i class="fa fa-chevron-left"></i> vpp/vpp一点又一点のvppctl
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">小马哥</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+                <a href="/archives">
+                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+			
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#系统提供的命令和接口"><span class="nav-number">2.</span> <span class="nav-text">系统提供的命令和接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#arp命令操作"><span class="nav-number">2.1.</span> <span class="nav-text">arp命令操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ip-neigh-命令操作"><span class="nav-number">2.2.</span> <span class="nav-text">ip neigh 命令操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#proc-文件查看"><span class="nav-number">2.3.</span> <span class="nav-text">proc 文件查看</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ioctl-代码支持-arp-的相关操作"><span class="nav-number">3.</span> <span class="nav-text">ioctl 代码支持 arp 的相关操作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#查询"><span class="nav-number">3.1.</span> <span class="nav-text">查询</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#增加"><span class="nav-number">3.2.</span> <span class="nav-text">增加</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除"><span class="nav-number">3.3.</span> <span class="nav-text">删除</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重要结构体回顾："><span class="nav-number">3.4.</span> <span class="nav-text">重要结构体回顾：</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#struct-arpreq"><span class="nav-number">3.4.1.</span> <span class="nav-text">struct arpreq</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小马哥</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      访客数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      总访问量
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
