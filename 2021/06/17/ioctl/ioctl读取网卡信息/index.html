@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="概述通过ioctl可以实现open、close、read、write之外的操作，本文主要描述通过ioctl获取网卡信息的方式。 ioctl函数的原型： #include &lt;sys&#x2F;ioctl.h&gt; int ioctl(int fd, unsigned long request, ...);获取网卡列清单 SIOCGIFCONF重要结构体：struct ifconf  {     int">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ioctl&#x2F;ioctl读取网卡信息">
+<meta property="og:url" content="https://github.maxuming.com/2021/06/17/ioctl/ioctl%E8%AF%BB%E5%8F%96%E7%BD%91%E5%8D%A1%E4%BF%A1%E6%81%AF/index.html">
+<meta property="og:site_name" content="小马的个人涂鸦">
+<meta property="og:description" content="概述通过ioctl可以实现open、close、read、write之外的操作，本文主要描述通过ioctl获取网卡信息的方式。 ioctl函数的原型： #include &lt;sys&#x2F;ioctl.h&gt; int ioctl(int fd, unsigned long request, ...);获取网卡列清单 SIOCGIFCONF重要结构体：struct ifconf  {     int">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-06-17T10:41:38.370Z">
+<meta property="article:modified_time" content="2021-06-17T10:36:44.426Z">
+<meta property="article:author" content="小马哥">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content=" c">
+<meta property="article:tag" content=" iptables">
+<meta property="article:tag" content=" Tensorflow">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://github.maxuming.com/2021/06/17/ioctl/ioctl读取网卡信息/"/>
+
+
+
+
+
+  <title>ioctl/ioctl读取网卡信息 | 小马的个人涂鸦</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小马的个人涂鸦</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">点点滴滴</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://github.maxuming.com/2021/06/17/ioctl/ioctl%E8%AF%BB%E5%8F%96%E7%BD%91%E5%8D%A1%E4%BF%A1%E6%81%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="小马哥">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小马的个人涂鸦">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">ioctl/ioctl读取网卡信息</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-06-17T18:41:38+08:00">
+                2021-06-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>通过ioctl可以实现open、close、read、write之外的操作，本文主要描述通过ioctl获取网卡信息的方式。</p>
+<p>ioctl函数的原型：</p>
+<pre><code>#include &lt;sys/ioctl.h&gt;
+int ioctl(int fd, unsigned long request, ...);</code></pre><h1 id="获取网卡列清单-SIOCGIFCONF"><a href="#获取网卡列清单-SIOCGIFCONF" class="headerlink" title="获取网卡列清单 SIOCGIFCONF"></a>获取网卡列清单 SIOCGIFCONF</h1><h2 id="重要结构体："><a href="#重要结构体：" class="headerlink" title="重要结构体："></a>重要结构体：</h2><pre><code>struct ifconf  {
+    int     ifc_len;
+    union {
+        char __user *ifcu_buf;
+        struct ifreq __user *ifcu_req;
+    } ifc_ifcu;
+};
+
+#define ifc_buf ifc_ifcu.ifcu_buf               /* buffer address       */
+#define ifc_req ifc_ifcu.ifcu_req               /* array of structures  */
+
+其中 ifc_len 表示联合体 ifc_ifcu 的字节数，后面两个宏定义为了方便访、直观地访问联合体的成员。</code></pre><h2 id="获取网卡清单的简化版本代码（不考虑各种异常情况）"><a href="#获取网卡清单的简化版本代码（不考虑各种异常情况）" class="headerlink" title="获取网卡清单的简化版本代码（不考虑各种异常情况）"></a>获取网卡清单的简化版本代码（不考虑各种异常情况）</h2><pre><code>//  获取系统的网卡清单
+static int do_get_interface_list()
+{
+#define MAX_IFCS 64 // 最多获取 64 张网卡信息
+    int sockfd = -1;
+    struct ifconf ifc;
+    struct ifreq ifreqlist[MAX_IFCS]; //   这个结构体后面有解释
+    int ifreqcount = 0;
+    int ifreqidx = 0;
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  ifc 用于保存获取到的网卡信息
+    //  入参时 ifc_len 需要 ifc_req 表明最多可以保存多少张网卡信息（字节数）
+    //  函数 ioctl 返回时, ifc_len 指明了实际读取到的网卡的数量（字节数）
+    ifc.ifc_len = sizeof(ifreqlist);
+    ifc.ifc_req = ifreqlist;
+
+    //  读取网卡信息到 ifc 中
+    ioctl(sockfd, SIOCGIFCONF, &amp;ifc);
+    close(sockfd);
+
+    //  结果输出
+    //  计算读取到的网卡数量，字节数除以每一张网卡信息结构的长度
+    ifreqcount = ifc.ifc_len / sizeof(struct ifreq);
+    printf(&quot;总共 %d 张网卡，清单如下：&quot;, ifreqcount);
+    for (ifreqidx = 0; ifreqidx &lt; ifreqcount; ifreqidx++)
+    {
+        //  网卡名称
+        printf(&quot;\nName: %s\t&quot;, ifreqlist[ifreqidx].ifr_name);
+        if (ifreqlist[ifreqidx].ifr_addr.sa_family == AF_INET)
+        {
+            //  通过 SIOCGIFCONF 可以读取到的基本信息是 struct ifreq 的第二个联合体成员的第一种情况 struct  sockaddr ifru_addr;
+            printf(&quot;Ip Address %s&quot;, inet_ntoa(((struct sockaddr_in *)&amp;ifreqlist[ifreqidx].ifr_addr)-&gt;sin_addr));
+        }
+    }
+    printf(&quot;\n&quot;);
+
+    return 0;
+}</code></pre><p>这份代码在我的虚机上执行后输出如下：</p>
+<pre><code>总共 4 张网卡，清单如下：
+Name: lo    Ip Address 127.0.0.1
+Name: ens33    Ip Address 172.18.145.128
+Name: ens34    Ip Address 172.18.89.127
+Name: virbr0    Ip Address 192.168.122.1</code></pre><h2 id="结构体-struct-ifreq"><a href="#结构体-struct-ifreq" class="headerlink" title="结构体 struct ifreq"></a>结构体 struct ifreq</h2><pre><code>struct ifreq {
+#define IFHWADDRLEN     6
+    union
+    {
+            char    ifrn_name[IFNAMSIZ];            /* if name, e.g. &quot;en0&quot; */
+    } ifr_ifrn;
+
+    union {
+            struct  sockaddr ifru_addr;        //    本小节中，只需要关注这个就够了，其它的后面继续用到。
+            struct  sockaddr ifru_dstaddr;
+            struct  sockaddr ifru_broadaddr;
+            struct  sockaddr ifru_netmask;
+            struct  sockaddr ifru_hwaddr;
+            short   ifru_flags;
+            int     ifru_ivalue;
+            int     ifru_mtu;
+            struct  ifmap ifru_map;
+            char    ifru_slave[IFNAMSIZ];   /* Just fits the size */
+            char    ifru_newname[IFNAMSIZ];
+            void __user *   ifru_data;
+            struct  if_settings ifru_settings;
+    } ifr_ifru;
+};
+
+#define ifr_name        ifr_ifrn.ifrn_name      /* interface name       */
+#define ifr_hwaddr      ifr_ifru.ifru_hwaddr    /* MAC address          */
+#define ifr_addr        ifr_ifru.ifru_addr      /* address              */
+#define ifr_dstaddr     ifr_ifru.ifru_dstaddr   /* other end of p-p lnk */
+#define ifr_broadaddr   ifr_ifru.ifru_broadaddr /* broadcast address    */
+#define ifr_netmask     ifr_ifru.ifru_netmask   /* interface net mask   */
+#define ifr_flags       ifr_ifru.ifru_flags     /* flags                */
+#define ifr_metric      ifr_ifru.ifru_ivalue    /* metric               */
+#define ifr_mtu         ifr_ifru.ifru_mtu       /* mtu                  */
+#define ifr_map         ifr_ifru.ifru_map       /* device map           */
+#define ifr_slave       ifr_ifru.ifru_slave     /* slave device         */
+#define ifr_data        ifr_ifru.ifru_data      /* for use by interface */
+#define ifr_ifindex     ifr_ifru.ifru_ivalue    /* interface index      */
+#define ifr_bandwidth   ifr_ifru.ifru_ivalue    /* link bandwidth       */
+#define ifr_qlen        ifr_ifru.ifru_ivalue    /* Queue length         */
+#define ifr_newname     ifr_ifru.ifru_newname   /* New name             */
+#define ifr_settings    ifr_ifru.ifru_settings  /* Device/proto settings*/</code></pre><p>struct ifreq 是一个神奇的结构体，除了第一个成员表示 interface 的名称（比如eth0、enp1s0）之外，第二个成员就是一个箩筐，可以选择性的表示各种含义。</p>
+<p>正如代码注释中所言，本小节中，我们利用 SIOCGIFCONF 读取到的 struct ifreq ，除了网卡名称 ifr_name 之外，就是网卡的IP地址 ifr_addr ，变量类型为 struct sockaddr , 当 sa_family 为 AF_INET 时 sa_data 的 2~5 个字节表示 IPV4 地址，可以对比以下两个结构体(它们之间可以相互强制转换的)：</p>
+<pre><code>struct sockaddr {
+    sa_family_t     sa_family;      /* address family, AF_xxx       */
+    char            sa_data[14];    /* 14 bytes of protocol address */
+};
+
+#define __SOCK_SIZE__   16              /* sizeof(struct sockaddr)      */
+struct sockaddr_in {
+  __kernel_sa_family_t  sin_family;     /* Address family               */
+  __be16                sin_port;       /* Port number                  */
+  struct in_addr        sin_addr;       /* Internet address             */
+
+  /* Pad to size of `struct sockaddr&apos;. */
+  unsigned char         __pad[__SOCK_SIZE__ - sizeof(short int) -
+                        sizeof(unsigned short int) - sizeof(struct in_addr)];
+};</code></pre><h1 id="获取网卡各种信息"><a href="#获取网卡各种信息" class="headerlink" title="获取网卡各种信息"></a>获取网卡各种信息</h1><p>利用 SIOCGIFCONF 获取到了网卡清单，但是每张网卡实际上就获取到了两个信息（名称、IP地址），如果要获取更多的信息，就需要额外再调用ioctl了，下面逐一说明。</p>
+<h2 id="简化版本的代码"><a href="#简化版本的代码" class="headerlink" title="简化版本的代码"></a>简化版本的代码</h2><pre><code>//  获取系统特定网卡的基本信息，包括物理地址、IPv4地址、子网掩码、广播地址等
+static int do_get_interface_infos(const char *dev)
+{
+    // const char *dev = &quot;ens33&quot;;
+    int sockfd = -1;
+    struct ifreq ifr;
+    unsigned char mac[6] = {0};
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  明确要获取哪一张网卡的信息，用网卡的名称来指示
+    memset(&amp;ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+    printf(&quot;\n\t网卡%s的信息如下：\n&quot;, dev);
+
+    //  获取网卡物理地址
+    ioctl(sockfd, SIOCGIFHWADDR, &amp;ifr);
+    memcpy(mac, ifr.ifr_hwaddr.sa_data, 6); //  方便打印结果
+    printf(&quot;\tSIOCGIFHWADDR Hardware address is %02x:%02x:%02x:%02x:%02x:%02x\n&quot;, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    //  获取网卡的IPV4地址
+    ioctl(sockfd, SIOCGIFADDR, &amp;ifr);
+    printf(&quot;\tSIOCGIFADDR IP address is %s\n&quot;, inet_ntoa(((struct sockaddr_in *)&amp;ifr.ifr_addr)-&gt;sin_addr));
+
+    //  在pppoe的网卡中，这个可以获取到pppoe的对端地址
+    ioctl(sockfd, SIOCGIFDSTADDR, &amp;ifr);
+    printf(&quot;\tSIOCGIFDSTADDR IP address is %s\n&quot;, inet_ntoa(((struct sockaddr_in *)&amp;ifr.ifr_addr)-&gt;sin_addr));
+
+    //  获取网卡的子网掩码地址
+    ioctl(sockfd, SIOCGIFNETMASK, &amp;ifr);
+    printf(&quot;\tSIOCGIFNETMASK Netmask address is %s\n&quot;, inet_ntoa(((struct sockaddr_in *)&amp;ifr.ifr_netmask)-&gt;sin_addr));
+
+    //  获取网卡的广播地址
+    ioctl(sockfd, SIOCGIFBRDADDR, &amp;ifr);
+    printf(&quot;\tSIOCGIFBRDADDR Broadcast address is %s\n&quot;, inet_ntoa(((struct sockaddr_in *)&amp;ifr.ifr_broadaddr)-&gt;sin_addr));
+
+    //  获取网卡的MTU
+    ioctl(sockfd, SIOCGIFMTU, &amp;ifr);
+    printf(&quot;\tSIOCGIFMTU MTU is %d\n&quot;, ifr.ifr_mtu);
+
+    close(sockfd);
+    return 0;
+}</code></pre><h2 id="获取网卡的状态-SIOCGIFFLAGS"><a href="#获取网卡的状态-SIOCGIFFLAGS" class="headerlink" title="获取网卡的状态 SIOCGIFFLAGS"></a>获取网卡的状态 SIOCGIFFLAGS</h2><p>网卡有各种状态，比如up、down、runing，以及是否处于混杂模式等，通过 SIOCGIFFLAGS 可以获取到这些状态，下面是简化版本的代码。</p>
+<pre><code>static int do_get_interface_flags(const char *dev)
+{
+    int sockfd = -1;
+    struct ifreq ifr;
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  明确要获取哪一张网卡的状态信息，用网卡的名称来指示
+    memset(&amp;ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+    //  获取网卡状态
+    if (ioctl(sockfd, SIOCGIFFLAGS, &amp;ifr) == -1)
+    {
+        printf(&quot;Failed to exec ioctl(SIOCGIFFLAGS): %m\n&quot;);
+    }
+    else
+    {
+        char printbuf[256] = {0};
+        int printlen = 0;
+        short flags = ifr.ifr_flags;
+
+        printlen += sprintf(&amp;printbuf[printlen], &quot;Interface %s&apos;s flags: &quot;, dev);
+
+        //  是否处于 UP 状态
+        if (flags &amp; IFF_UP)
+        {
+            printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;UP, &quot;);
+        }
+        else
+        {
+            printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;Down, &quot;);
+        }
+
+        if (flags &amp; IFF_BROADCAST)
+        {
+            printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;Broadcast, &quot;);
+        }
+
+        if (flags &amp; IFF_RUNNING)
+        {
+            printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;Runing, &quot;);
+        }
+
+        //  more...
+
+        //  是否支持混杂模式
+        if (flags &amp; IFF_PROMISC)
+        {
+            printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;Promisc, &quot;);
+        }
+        else
+        {
+            printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;Not Promisc, &quot;);
+        }
+
+        printlen += sprintf(&amp;printbuf[printlen], &quot;%s&quot;, &quot;and more flags.\n&quot;);
+
+        printf(printbuf);
+    }
+
+    close(sockfd);
+
+    return 0;
+}</code></pre><p>这里列举了所有的 flags:</p>
+<pre><code>enum net_device_flags {
+/* for compatibility with glibc net/if.h */
+#if __UAPI_DEF_IF_NET_DEVICE_FLAGS
+        IFF_UP                          = 1&lt;&lt;0,  /* sysfs */
+        IFF_BROADCAST                   = 1&lt;&lt;1,  /* volatile */
+        IFF_DEBUG                       = 1&lt;&lt;2,  /* sysfs */
+        IFF_LOOPBACK                    = 1&lt;&lt;3,  /* volatile */
+        IFF_POINTOPOINT                 = 1&lt;&lt;4,  /* volatile */
+        IFF_NOTRAILERS                  = 1&lt;&lt;5,  /* sysfs */
+        IFF_RUNNING                     = 1&lt;&lt;6,  /* volatile */
+        IFF_NOARP                       = 1&lt;&lt;7,  /* sysfs */
+        IFF_PROMISC                     = 1&lt;&lt;8,  /* sysfs */
+        IFF_ALLMULTI                    = 1&lt;&lt;9,  /* sysfs */
+        IFF_MASTER                      = 1&lt;&lt;10, /* volatile */
+        IFF_SLAVE                       = 1&lt;&lt;11, /* volatile */
+        IFF_MULTICAST                   = 1&lt;&lt;12, /* sysfs */
+        IFF_PORTSEL                     = 1&lt;&lt;13, /* sysfs */
+        IFF_AUTOMEDIA                   = 1&lt;&lt;14, /* sysfs */
+        IFF_DYNAMIC                     = 1&lt;&lt;15, /* sysfs */
+#endif /* __UAPI_DEF_IF_NET_DEVICE_FLAGS */
+#if __UAPI_DEF_IF_NET_DEVICE_FLAGS_LOWER_UP_DORMANT_ECHO
+        IFF_LOWER_UP                    = 1&lt;&lt;16, /* volatile */
+        IFF_DORMANT                     = 1&lt;&lt;17, /* volatile */
+        IFF_ECHO                        = 1&lt;&lt;18, /* volatile */
+#endif /* __UAPI_DEF_IF_NET_DEVICE_FLAGS_LOWER_UP_DORMANT_ECHO */
+};</code></pre><h1 id="设置各种参数"><a href="#设置各种参数" class="headerlink" title="设置各种参数"></a>设置各种参数</h1><p>ioctl 除了可以获取网卡相关的信息外，还可以设置网卡的参数，包括ip地址、子网掩码、mtu等等，下面以设置ip地址为例进行说明。</p>
+<h2 id="SIOCSIFADDR-设置网卡-ipv4-地址"><a href="#SIOCSIFADDR-设置网卡-ipv4-地址" class="headerlink" title="SIOCSIFADDR 设置网卡 ipv4 地址"></a>SIOCSIFADDR 设置网卡 ipv4 地址</h2><pre><code>static int do_set_interface_ipaddr(const char *dev, const char *newipaddr)
+{
+    int sockfd = -1;
+    struct ifreq ifr;
+    struct sockaddr_in *psockaddr = (struct sockaddr_in *)&amp;ifr.ifr_addr;
+
+    //  一个必要的 socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //  先清空配置
+    memset(&amp;ifr, 0, sizeof(ifr));
+
+    //  明确要设置哪一张网卡的信息，用网卡的名称来指示
+    strcpy(ifr.ifr_name, dev);
+
+    //  设置 ipv4 的地址, 即时生效的
+    psockaddr-&gt;sin_family = AF_INET;
+    psockaddr-&gt;sin_port = htons(0);
+    psockaddr-&gt;sin_addr.s_addr = inet_addr(newipaddr);
+
+    //  设置网卡地址
+    if (ioctl(sockfd, SIOCSIFADDR, &amp;ifr) &lt; 0)
+    {
+        printf(&quot;Failed to ioctl(SIOCSIFADDR): %m\n&quot;);
+    }
+
+    close(sockfd);
+
+    return 0;
+}</code></pre>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/05/31/ioctl/ioctl%E5%92%8Carp%E7%BC%93%E5%AD%98/" rel="next" title="ioctl/ioctl和arp缓存">
+                <i class="fa fa-chevron-left"></i> ioctl/ioctl和arp缓存
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">小马哥</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+                <a href="/archives">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+			
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#获取网卡列清单-SIOCGIFCONF"><span class="nav-number">2.</span> <span class="nav-text">获取网卡列清单 SIOCGIFCONF</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#重要结构体："><span class="nav-number">2.1.</span> <span class="nav-text">重要结构体：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取网卡清单的简化版本代码（不考虑各种异常情况）"><span class="nav-number">2.2.</span> <span class="nav-text">获取网卡清单的简化版本代码（不考虑各种异常情况）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结构体-struct-ifreq"><span class="nav-number">2.3.</span> <span class="nav-text">结构体 struct ifreq</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#获取网卡各种信息"><span class="nav-number">3.</span> <span class="nav-text">获取网卡各种信息</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#简化版本的代码"><span class="nav-number">3.1.</span> <span class="nav-text">简化版本的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取网卡的状态-SIOCGIFFLAGS"><span class="nav-number">3.2.</span> <span class="nav-text">获取网卡的状态 SIOCGIFFLAGS</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#设置各种参数"><span class="nav-number">4.</span> <span class="nav-text">设置各种参数</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SIOCSIFADDR-设置网卡-ipv4-地址"><span class="nav-number">4.1.</span> <span class="nav-text">SIOCSIFADDR 设置网卡 ipv4 地址</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小马哥</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      访客数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      总访问量
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
